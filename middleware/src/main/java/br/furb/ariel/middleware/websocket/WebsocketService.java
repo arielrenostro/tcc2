@@ -1,5 +1,6 @@
 package br.furb.ariel.middleware.websocket;
 
+import br.furb.ariel.middleware.broker.Consumer;
 import br.furb.ariel.middleware.client.ClientService;
 import br.furb.ariel.middleware.message.dto.MessageDTO;
 import br.furb.ariel.middleware.websocket.dto.WebsocketErrorEvent;
@@ -7,6 +8,8 @@ import br.furb.ariel.middleware.websocket.dto.WebsocketMessageEvent;
 import br.furb.ariel.middleware.websocket.dto.WebsocketPongEvent;
 import br.furb.ariel.middleware.websocket.dto.WebsocketSession;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.Delivery;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import org.jboss.logging.Logger;
@@ -149,6 +152,10 @@ public class WebsocketService {
         return session;
     }
 
+    public SendMessageConsumer newConsumer() {
+        return new SendMessageConsumer();
+    }
+
     private void processMessage(WebsocketSession session, MessageDTO messageDTO) {
         try {
             // TODO
@@ -166,5 +173,23 @@ public class WebsocketService {
             }
         }
         return null;
+    }
+
+    public class SendMessageConsumer implements Consumer.Handler {
+
+        private final Logger logger = Logger.getLogger(SendMessageConsumer.class);
+
+        @Override
+        public void run(Delivery message) {
+            String clientId = getClientId(message);
+            this.logger.info("Sending message to client " + clientId);
+            send(clientId, new String(message.getBody()));
+        }
+
+        private String getClientId(Delivery message) {
+            BasicProperties properties = message.getProperties();
+            Map<String, Object> headers = properties.getHeaders();
+            return String.valueOf(headers.get("clientId"));
+        }
     }
 }
