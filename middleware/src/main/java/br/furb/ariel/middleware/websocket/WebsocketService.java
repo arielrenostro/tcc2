@@ -20,11 +20,16 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 
 @ApplicationScoped
 public class WebsocketService {
+
+    private static final String CLIENT_ID_PARAM = "id";
 
     private final Map<String, Session> sessionsById = new ConcurrentHashMap<>();
     private final Map<String, WebsocketSession> websocketSessionById = new ConcurrentHashMap<>();
@@ -39,7 +44,7 @@ public class WebsocketService {
     ObjectMapper objectMapper;
 
     @ConsumeEvent(value = "websocket-onopen", blocking = true)
-    public Uni<Void> onOpen(String sessionId) throws IOException {
+    public Uni<Void> onOpen(String sessionId) throws IOException, InterruptedException, TimeoutException {
         this.logger.info("New Session " + sessionId);
 
         Session session = getSession(sessionId);
@@ -61,6 +66,8 @@ public class WebsocketService {
         String message = event.getMessage();
         WebsocketSession websocketSession = getWebsocketSession(event.getId());
 
+        this.clientService.updateRegistration(websocketSession);
+
         try {
             MessageDTO messageDTO = this.objectMapper.readValue(message, MessageDTO.class);
             processMessage(websocketSession, messageDTO);
@@ -78,7 +85,7 @@ public class WebsocketService {
         this.sessionsById.remove(id);
         WebsocketSession websocketSession = this.websocketSessionById.remove(id);
         if (websocketSession != null) {
-            this.clientService.unregister(websocketSession);
+            this.clientService.deregister(websocketSession);
         }
         return Uni.createFrom().voidItem();
     }
@@ -87,6 +94,7 @@ public class WebsocketService {
     public Uni<Void> onError(WebsocketErrorEvent event) {
         Session session = getSession(event.getId());
         Throwable throwable = event.getThrowable();
+
         this.logger.error("Error on Session " + session.getId() + ": " + throwable.getMessage(), throwable);
 
         return Uni.createFrom().voidItem();
@@ -97,11 +105,28 @@ public class WebsocketService {
         WebsocketSession websocketSession = getWebsocketSession(event.getId());
         websocketSession.setLastPong(Instant.now());
 
+        this.clientService.updateRegistration(websocketSession);
+
         return Uni.createFrom().voidItem();
     }
 
     public Set<WebsocketSession> getSesions() {
         return Set.copyOf(this.websocketSessionById.values());
+    }
+
+    public void deregisterClients() {
+        Set<WebsocketSession> websocketSessions = Set.copyOf(this.websocketSessionById.values());
+        websocketSessions.parallelStream().forEach(websocketSession -> this.clientService.deregister(websocketSession));
+    }
+
+    public void send(String clientId, String message) {
+        Optional<WebsocketSession> optional = this.websocketSessionById.values().stream().filter(websocketSession -> Objects.equals(clientId, websocketSession.getClientId())).findFirst();
+        optional.ifPresent(websocketSession -> send(websocketSession, message));
+    }
+
+    public void send(WebsocketSession websocketSession, String message) {
+        Session session = websocketSession.getSession();
+        session.getAsyncRemote().sendText(message);
     }
 
     public void putSession(Session session) {
@@ -135,7 +160,7 @@ public class WebsocketService {
     private String getId(Session session) {
         Map<String, List<String>> requestParameterMap = session.getRequestParameterMap();
         if (requestParameterMap != null) {
-            List<String> idParameters = requestParameterMap.get("id");
+            List<String> idParameters = requestParameterMap.get(CLIENT_ID_PARAM);
             if (idParameters != null && !idParameters.isEmpty()) {
                 return idParameters.iterator().next();
             }

@@ -52,5 +52,12 @@ public class MessageDTO {
             this.data.put("status", "ok");
             return this;
         }
+
+        public Builder from(Message message) {
+            this.id = message.getId();
+            this.answerId = message.getAnswerId();
+            this.data = new HashMap<>(message.getData());
+            return this;
+        }
     }
 }

@@ -1,6 +1,6 @@
 package br.furb.ariel.middleware.jobs;
 
-import br.furb.ariel.middleware.client.ClientService;
+import br.furb.ariel.middleware.config.Config;
 import br.furb.ariel.middleware.websocket.WebsocketService;
 import br.furb.ariel.middleware.websocket.dto.WebsocketSession;
 import io.quarkus.scheduler.Scheduled;
@@ -20,16 +20,13 @@ import java.util.Set;
 @ApplicationScoped
 public class WebsocketPingPongJob {
 
-    private static final Duration PING_TIMEOUT = Duration.ofSeconds(5);
-    private static final Duration PING_INTERVAL = Duration.ofSeconds(20);
-
     @Inject
     Logger logger;
 
     @Inject
     WebsocketService service;
 
-    @Scheduled(every = "10s", identity = "WebsocketPing")
+    @Scheduled(every = Config.WEBSOCKET_CHECK_PING_JOB_INTERVAL, identity = "WebsocketPing")
     void ping() {
         Set<WebsocketSession> sessions = this.service.getSesions();
         sessions.parallelStream().forEach(websocketSession -> {
@@ -56,12 +53,12 @@ public class WebsocketPingPongJob {
             return false;
         }
         Duration timeElipsed = Duration.between(websocketSession.getLastPing(), Instant.now());
-        if (timeElipsed.compareTo(PING_TIMEOUT) > 0) {
+        if (timeElipsed.compareTo(Config.WEBSOCKET_PING_TIMEOUT) > 0) {
             if (websocketSession.getLastPong() == null) {
                 return true;
             }
             Duration diff = Duration.between(websocketSession.getLastPing(), websocketSession.getLastPong());
-            return diff.compareTo(PING_TIMEOUT) > 0;
+            return diff.compareTo(Config.WEBSOCKET_PING_TIMEOUT) > 0;
         }
         return false;
     }
@@ -71,6 +68,6 @@ public class WebsocketPingPongJob {
             return true;
         }
         Duration timeElipsed = Duration.between(websocketSession.getLastPing(), Instant.now());
-        return timeElipsed.compareTo(PING_INTERVAL) > 0;
+        return timeElipsed.compareTo(Config.WEBSOCKET_PING_INTERNAL) > 0;
     }
 }

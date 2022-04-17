@@ -3,6 +3,7 @@ package br.furb.ariel.middleware.cache;
 import io.quarkus.redis.client.RedisClient;
 
 import javax.inject.Inject;
+import java.time.Duration;
 import java.util.List;
 
 public abstract class CacheService {
@@ -11,9 +12,6 @@ public abstract class CacheService {
 
     @Inject
     RedisClient redisClient;
-
-    //    @Inject
-    //    ReactiveRedisClient reactiveRedisClient;
 
     protected CacheService(String prefix) {
         this.prefix = prefix;
@@ -24,9 +22,9 @@ public abstract class CacheService {
         return this.redisClient.get(realKey).toString();
     }
 
-    public void set(String key, String value) {
+    public void setex(String key, String value, Duration duration) {
         String realKey = buildKey(key);
-        this.redisClient.set(List.of(realKey, value));
+        this.redisClient.setex(realKey, String.valueOf(duration.getSeconds()), value);
     }
 
     public void del(String key) {

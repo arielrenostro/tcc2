@@ -1,7 +1,8 @@
 package br.furb.ariel.middleware.client;
 
-import br.furb.ariel.middleware.container.ContainerService;
 import br.furb.ariel.middleware.cache.CacheService;
+import br.furb.ariel.middleware.config.Config;
+import br.furb.ariel.middleware.container.ContainerService;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -18,14 +19,14 @@ public class ClientCacheService extends CacheService {
 
     public void register(String clientId) {
         String containerId = this.containerService.getId();
-        this.set(clientId, containerId);
+        setex(clientId, containerId, Config.CACHE_CLIENT_REGISTER_TIMEOUT);
     }
 
-    public void unregister(String clientId) {
-        this.del(clientId);
+    public void deregister(String clientId) {
+        del(clientId);
     }
 
-    public String findClient(String clientId) {
-        return this.get(clientId);
+    public String findContainerClient(String clientId) {
+        return get(clientId);
     }
 }
