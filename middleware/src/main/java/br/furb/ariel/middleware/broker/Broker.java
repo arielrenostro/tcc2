@@ -33,19 +33,22 @@ public class Broker {
     @Inject
     Logger logger;
 
+    @Inject
+    Config config;
+
     public Broker() {
         this.connectionFactory = new ConnectionFactory();
-        this.connectionFactory.setHost(Config.RABBITMQ_HOST);
-        if (Config.RABBITMQ_SSL) {
+        this.connectionFactory.setHost(this.config.getRabbitmqHost());
+        if (this.config.isRabbitmqSSL()) {
             try {
                 this.connectionFactory.useSslProtocol();
             } catch (NoSuchAlgorithmException | KeyManagementException e) {
                 throw new RuntimeException(e);
             }
         }
-        this.connectionFactory.setPort(Config.RABBITMQ_PORT);
-        this.connectionFactory.setVirtualHost(Config.RABBITMQ_VHOST);
-        this.connectionFactory.setCredentialsProvider(new DefaultCredentialsProvider(Config.RABBITMQ_USERNAME, Config.RABBITMQ_PASSWORD));
+        this.connectionFactory.setPort(this.config.getRabbitmqPort());
+        this.connectionFactory.setVirtualHost(this.config.getRabbitmqVhost());
+        this.connectionFactory.setCredentialsProvider(new DefaultCredentialsProvider(this.config.getRabbitmqUsername(), this.config.getRabbitmqPassword()));
         this.connectionFactory.setCredentialsRefreshService(new DefaultCredentialsRefreshServiceBuilder().build());
     }
 
@@ -72,7 +75,18 @@ public class Broker {
         try {
             BasicProperties properties = MessageProperties.BASIC.builder().headers(headers).build();
             channel.basicPublish(exchangeName, routingKey, properties, data);
-            channel.waitForConfirmsOrDie(Config.RABBITMQ_TIMEOUT_PUBLISH);
+            channel.waitForConfirmsOrDie(this.config.getRabbitmqTimeoutPublish());
+        } finally {
+            releasePublishChannel(channel);
+        }
+    }
+
+    public void publishQueue(String queueName, Map<String, Object> headers, byte[] data) throws IOException, InterruptedException, TimeoutException {
+        Channel channel = getPublishChannel();
+        try {
+            BasicProperties properties = MessageProperties.BASIC.builder().headers(headers).build();
+            channel.basicPublish("", queueName, properties, data);
+            channel.waitForConfirmsOrDie(this.config.getRabbitmqTimeoutPublish());
         } finally {
             releasePublishChannel(channel);
         }

@@ -1,6 +1,7 @@
 package br.furb.ariel.middleware.message.dto;
 
 import br.furb.ariel.middleware.message.model.Message;
+import br.furb.ariel.middleware.service.dto.ServiceNotificationDTO;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import lombok.Data;
@@ -16,6 +17,7 @@ public class MessageDTO {
 
     private String id;
     private String answerId;
+    private String route;
     private Map<String, Object> data;
     private Date ttl;
 
@@ -23,8 +25,16 @@ public class MessageDTO {
         return new Builder().ok(answerId);
     }
 
+    public static Builder error(String answerId, String message) {
+        return new Builder().error(answerId, message);
+    }
+
     public static Builder from(Message message) {
         return new Builder().from(message);
+    }
+
+    public static Builder from(ServiceNotificationDTO dto) {
+        return new Builder().from(dto);
     }
 
     public static class Builder {
@@ -32,6 +42,7 @@ public class MessageDTO {
         private String id;
         private String answerId;
         private Map<String, Object> data;
+        private Date ttl;
 
         private Builder() {
 
@@ -42,6 +53,7 @@ public class MessageDTO {
             dto.setId(this.id);
             dto.setAnswerId(this.answerId);
             dto.setData(new HashMap<>(this.data));
+            dto.setTtl(this.ttl);
             return dto;
         }
 
@@ -49,7 +61,16 @@ public class MessageDTO {
             this.id = UUID.randomUUID().toString();
             this.answerId = answerId;
             this.data = new HashMap<>();
-            this.data.put("status", "ok");
+            this.data.put("status", "OK");
+            return this;
+        }
+
+        public Builder error(String answerId, String message) {
+            this.id = UUID.randomUUID().toString();
+            this.answerId = answerId;
+            this.data = new HashMap<>();
+            this.data.put("status", "ERROR");
+            this.data.put("message", message);
             return this;
         }
 
@@ -57,6 +78,14 @@ public class MessageDTO {
             this.id = message.getId();
             this.answerId = message.getAnswerId();
             this.data = new HashMap<>(message.getData());
+            return this;
+        }
+
+        public Builder from(ServiceNotificationDTO dto) {
+            this.id = dto.getId();
+            this.answerId = dto.getAnswerId();
+            this.data = new HashMap<>(dto.getData());
+            this.ttl = dto.getTtl();
             return this;
         }
     }

@@ -1,4 +1,4 @@
-package br.furb.ariel.middleware.jobs;
+package br.furb.ariel.middleware.job;
 
 import br.furb.ariel.middleware.config.Config;
 import br.furb.ariel.middleware.websocket.WebsocketService;

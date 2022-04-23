@@ -2,16 +2,20 @@ package br.furb.ariel.middleware.websocket;
 
 import br.furb.ariel.middleware.broker.Consumer;
 import br.furb.ariel.middleware.client.ClientService;
+import br.furb.ariel.middleware.exception.MiddlewareException;
 import br.furb.ariel.middleware.message.dto.MessageDTO;
+import br.furb.ariel.middleware.service.service.ServiceService;
 import br.furb.ariel.middleware.websocket.dto.WebsocketErrorEvent;
 import br.furb.ariel.middleware.websocket.dto.WebsocketMessageEvent;
 import br.furb.ariel.middleware.websocket.dto.WebsocketPongEvent;
 import br.furb.ariel.middleware.websocket.dto.WebsocketSession;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Delivery;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
+import lombok.SneakyThrows;
 import org.jboss.logging.Logger;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -44,7 +48,10 @@ public class WebsocketService {
     ClientService clientService;
 
     @Inject
-    ObjectMapper objectMapper;
+    ServiceService serviceService;
+
+    @Inject
+    ObjectMapper mapper;
 
     @ConsumeEvent(value = "websocket-onopen", blocking = true)
     public Uni<Void> onOpen(String sessionId) throws IOException, InterruptedException, TimeoutException {
@@ -64,6 +71,7 @@ public class WebsocketService {
         return Uni.createFrom().voidItem();
     }
 
+    @SneakyThrows
     @ConsumeEvent(value = "websocket-onmessage", blocking = true)
     public Uni<Void> onMessage(WebsocketMessageEvent event) {
         String message = event.getMessage();
@@ -71,11 +79,22 @@ public class WebsocketService {
 
         this.clientService.updateRegistration(websocketSession);
 
+        MessageDTO messageDTO = null;
         try {
-            MessageDTO messageDTO = this.objectMapper.readValue(message, MessageDTO.class);
-            processMessage(websocketSession, messageDTO);
-        } catch (IOException e) {
+            messageDTO = this.mapper.readValue(message, MessageDTO.class);
+            this.serviceService.processClientMessage(websocketSession.getClientId(), messageDTO);
+
+            MessageDTO response = MessageDTO.ok(messageDTO.getId()).build();
+            send(websocketSession, this.mapper.writeValueAsString(response));
+        } catch (JsonProcessingException e) {
             this.logger.error("Failure to desserialize JSON: " + e.getMessage() + " - " + message);
+
+        } catch (MiddlewareException e) {
+            MessageDTO response = MessageDTO.error(messageDTO.getId(), e.getMessage()).build();
+            send(websocketSession, this.mapper.writeValueAsString(response));
+
+        } catch (Exception e) {
+            this.logger.error("Failure to send message to service: " + e.getMessage(), e);
         }
 
         return Uni.createFrom().voidItem();
@@ -123,7 +142,10 @@ public class WebsocketService {
     }
 
     public void send(String clientId, String message) {
-        Optional<WebsocketSession> optional = this.websocketSessionById.values().stream().filter(websocketSession -> Objects.equals(clientId, websocketSession.getClientId())).findFirst();
+        Optional<WebsocketSession> optional = this.websocketSessionById.values() //
+                .stream() //
+                .filter(websocketSession -> Objects.equals(clientId, websocketSession.getClientId())) //
+                .findFirst();
         optional.ifPresent(websocketSession -> send(websocketSession, message));
     }
 
@@ -154,14 +176,6 @@ public class WebsocketService {
 
     public SendMessageConsumer newConsumer() {
         return new SendMessageConsumer();
-    }
-
-    private void processMessage(WebsocketSession session, MessageDTO messageDTO) {
-        try {
-            // TODO
-        } catch (Exception e) {
-            this.logger.error(e.getMessage(), e);
-        }
     }
 
     private String getId(Session session) {
