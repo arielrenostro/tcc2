@@ -17,33 +17,32 @@ public class Config {
     public static final Duration WEBSOCKET_PING_INTERNAL = Duration.ofSeconds(20);
     public static final String WEBSOCKET_CHECK_PING_JOB_INTERVAL = "10s";
 
-    private final String rabbitmqHost;
-    private final Integer rabbitmqPort;
-    private final String rabbitmqVhost;
-    private final String rabbitmqUsername;
-    private final String rabbitmqPassword;
-    private final boolean rabbitmqSSL;
-    private final Long rabbitmqTimeoutPublish;
-    private final int consumersToSend;
+    @ConfigProperty(name = "RABBITMQ_HOST")
+    String rabbitmqHost;
 
-    public Config( //
-            @ConfigProperty(name = "RABBITMQ_HOST") String rabbitmqHost, //
-            @ConfigProperty(name = "RABBITMQ_PORT") Integer rabbitmqPort, //
-            @ConfigProperty(name = "RABBITMQ_VHOST") String rabbitmqVhost, //
-            @ConfigProperty(name = "RABBITMQ_USERNAME") String rabbitmqUsername, //
-            @ConfigProperty(name = "RABBITMQ_PASSWORD") String rabbitmqPassword, //
-            @ConfigProperty(name = "RABBITMQ_SSL") boolean rabbitmqSSL, //
-            @ConfigProperty(name = "RABBITMQ_TIMEOUT_PUBLISH") long rabbitmqTimeoutPublish, //
-            @ConfigProperty(name = "CONSUMERS_TO_SEND") int consumersToSend //
-    ) {
-        this.rabbitmqHost = rabbitmqHost;
-        this.rabbitmqPort = rabbitmqPort;
-        this.rabbitmqVhost = rabbitmqVhost;
-        this.rabbitmqUsername = rabbitmqUsername;
-        this.rabbitmqPassword = rabbitmqPassword;
-        this.rabbitmqSSL = rabbitmqSSL;
-        this.rabbitmqTimeoutPublish = rabbitmqTimeoutPublish;
-        this.consumersToSend = consumersToSend;
+    @ConfigProperty(name = "RABBITMQ_PORT")
+    Integer rabbitmqPort;
+
+    @ConfigProperty(name = "RABBITMQ_VHOST")
+    String rabbitmqVhost;
+
+    @ConfigProperty(name = "RABBITMQ_USERNAME")
+    String rabbitmqUsername;
+
+    @ConfigProperty(name = "RABBITMQ_PASSWORD")
+    String rabbitmqPassword;
+
+    @ConfigProperty(name = "RABBITMQ_SSL")
+    boolean rabbitmqSSL;
+
+    @ConfigProperty(name = "RABBITMQ_TIMEOUT_PUBLISH")
+    Long rabbitmqTimeoutPublish;
+
+    @ConfigProperty(name = "CONSUMERS_TO_SEND")
+    int consumersToSend;
+
+    public Config() {
+
     }
 
     public String getRabbitmqHost() {

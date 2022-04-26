@@ -7,15 +7,21 @@ import br.furb.ariel.middleware.message.model.DestinationType;
 import br.furb.ariel.middleware.message.model.Message;
 import br.furb.ariel.middleware.message.model.MessageStatus;
 import br.furb.ariel.middleware.message.repository.MessageRepository;
+import org.bson.types.ObjectId;
+import org.jboss.logging.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Singleton
 public class MessageService {
+
+    @Inject
+    Logger logger;
 
     @Inject
     MessageRepository repository;
@@ -28,7 +34,10 @@ public class MessageService {
         return this.repository.findPendingMessagesByService(serviceId);
     }
 
-    public Message persistNewClientMessage(String clientId, String serviceId, MessageDTO messageDTO) {
+    public Message persistNewClientMessage(String clientId, ObjectId serviceId, MessageDTO messageDTO) throws MiddlewareException {
+        if (this.repository.findByMessageId(messageDTO.getId()) != null) {
+            throw new MiddlewareException("Message already exists with id \"" + messageDTO.getId() + "\"");
+        }
         Message message = createMessage(messageDTO);
 
         message.setOrigin(new Destination());
@@ -36,10 +45,10 @@ public class MessageService {
         message.getOrigin().setType(DestinationType.CLIENT);
 
         message.setDestination(new Destination());
-        message.getDestination().setId(serviceId);
+        message.getDestination().setId(String.valueOf(serviceId));
         message.getDestination().setType(DestinationType.SERVICE);
 
-        this.repository.save(message);
+        this.repository.persist(message);
 
         return message;
     }
@@ -55,7 +64,7 @@ public class MessageService {
         message.getDestination().setId(clientId);
         message.getDestination().setType(DestinationType.CLIENT);
 
-        this.repository.save(message);
+        this.repository.persist(message);
 
         return message;
     }
@@ -67,7 +76,7 @@ public class MessageService {
         Map<String, Object> data = messageDTO.getData();
 
         Message message = new Message();
-        message.setId(id);
+        message.setMessageId(id);
         message.setAnswerId(answerId);
         message.setStatus(MessageStatus.PENDING);
         message.setCreatedAt(new Date());
@@ -77,11 +86,19 @@ public class MessageService {
     }
 
     public void confirmMessage(String messageId) throws MiddlewareException {
-        Message message = this.repository.findById(messageId);
+        Message message = this.repository.findByMessageId(messageId);
         if (message == null) {
             throw new MiddlewareException("Message " + messageId + " not found");
         }
+
+        if (Objects.equals(MessageStatus.DELIVERED, message.getStatus())) {
+            this.logger.info("Message " + messageId + " is already confirmed");
+            return;
+        }
+
+        this.logger.info("Confirming message " + messageId);
         message.setStatus(MessageStatus.DELIVERED);
-        this.repository.save(message);
+        message.setDeliveredAt(new Date());
+        this.repository.update(message);
     }
 }

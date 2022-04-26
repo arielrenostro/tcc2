@@ -24,10 +24,10 @@ import java.util.concurrent.TimeoutException;
 @Singleton
 public class Broker {
 
-    private final ConnectionFactory connectionFactory;
     private final ArrayBlockingQueue<Channel> publishChannels = new ArrayBlockingQueue<>(1);
     private final Semaphore publishChannelSemaphore = new Semaphore(1);
 
+    private ConnectionFactory connectionFactory;
     private Connection connection;
 
     @Inject
@@ -35,22 +35,6 @@ public class Broker {
 
     @Inject
     Config config;
-
-    public Broker() {
-        this.connectionFactory = new ConnectionFactory();
-        this.connectionFactory.setHost(this.config.getRabbitmqHost());
-        if (this.config.isRabbitmqSSL()) {
-            try {
-                this.connectionFactory.useSslProtocol();
-            } catch (NoSuchAlgorithmException | KeyManagementException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        this.connectionFactory.setPort(this.config.getRabbitmqPort());
-        this.connectionFactory.setVirtualHost(this.config.getRabbitmqVhost());
-        this.connectionFactory.setCredentialsProvider(new DefaultCredentialsProvider(this.config.getRabbitmqUsername(), this.config.getRabbitmqPassword()));
-        this.connectionFactory.setCredentialsRefreshService(new DefaultCredentialsRefreshServiceBuilder().build());
-    }
 
     public void createRoutedExchange(String exchangeName, boolean durable) throws IOException, InterruptedException, TimeoutException {
         Channel channel = getPublishChannel();
@@ -140,8 +124,27 @@ public class Broker {
 
     private Connection getConnection() throws IOException, TimeoutException {
         if (this.connection == null || !this.connection.isOpen()) {
-            this.connection = this.connectionFactory.newConnection();
+            this.connection = getConnectionFactory().newConnection();
         }
         return this.connection;
+    }
+
+    private ConnectionFactory getConnectionFactory() {
+        if (this.connectionFactory == null) {
+            this.connectionFactory = new ConnectionFactory();
+            this.connectionFactory.setHost(this.config.getRabbitmqHost());
+            if (this.config.isRabbitmqSSL()) {
+                try {
+                    this.connectionFactory.useSslProtocol();
+                } catch (NoSuchAlgorithmException | KeyManagementException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            this.connectionFactory.setPort(this.config.getRabbitmqPort());
+            this.connectionFactory.setVirtualHost(this.config.getRabbitmqVhost());
+            this.connectionFactory.setCredentialsProvider(new DefaultCredentialsProvider(this.config.getRabbitmqUsername(), this.config.getRabbitmqPassword()));
+            this.connectionFactory.setCredentialsRefreshService(new DefaultCredentialsRefreshServiceBuilder().build());
+        }
+        return this.connectionFactory;
     }
 }

@@ -75,7 +75,7 @@ public class MessageDTO {
         }
 
         public Builder from(Message message) {
-            this.id = message.getId();
+            this.id = String.valueOf(message.getMessageId());
             this.answerId = message.getAnswerId();
             this.data = new HashMap<>(message.getData());
             return this;

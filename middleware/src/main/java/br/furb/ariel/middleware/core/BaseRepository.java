@@ -1,14 +1,11 @@
 package br.furb.ariel.middleware.core;
 
-public class BaseRepository<T> {
+import io.quarkus.mongodb.panache.PanacheMongoRepository;
+import org.bson.types.ObjectId;
+
+public abstract class BaseRepository<T> implements PanacheMongoRepository<T> {
 
     public T findById(String id) {
-        // TODO;
-        return null;
-    }
-
-    public T save(T entity) {
-        // TODO
-        return entity;
+        return this.findById(new ObjectId(id));
     }
 }

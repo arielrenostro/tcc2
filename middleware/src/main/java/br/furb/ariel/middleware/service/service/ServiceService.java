@@ -3,6 +3,7 @@ package br.furb.ariel.middleware.service.service;
 import br.furb.ariel.middleware.broker.Broker;
 import br.furb.ariel.middleware.broker.Consumer;
 import br.furb.ariel.middleware.client.ClientService;
+import br.furb.ariel.middleware.core.BaseService;
 import br.furb.ariel.middleware.exception.MiddlewareException;
 import br.furb.ariel.middleware.exception.ServiceNotFoundException;
 import br.furb.ariel.middleware.message.dto.MessageDTO;
@@ -18,6 +19,7 @@ import br.furb.ariel.middleware.websocket.WebsocketService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Delivery;
+import org.bson.types.ObjectId;
 import org.jboss.logging.Logger;
 
 import javax.inject.Inject;
@@ -29,7 +31,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 
 @Singleton
-public class ServiceService {
+public class ServiceService extends BaseService<Service, ServiceRepository> {
 
     private static final String MIDDLEWARE_ROUTE = "middleware";
 
@@ -50,6 +52,11 @@ public class ServiceService {
 
     @Inject
     Logger logger;
+
+    @Override
+    protected ServiceRepository getRepository() {
+        return this.repository;
+    }
 
     public void handleNotification(String serviceId, byte[] message) {
         ServiceNotificationDTO notification;
@@ -84,7 +91,7 @@ public class ServiceService {
     private void sendPendingMessages(String serviceId) throws IOException, InterruptedException, TimeoutException {
         this.logger.info("Sending pending messages to service " + serviceId);
 
-        Service service = this.repository.findById(serviceId);
+        Service service = this.repository.findById(new ObjectId(serviceId));
         if (service == null) {
             this.logger.warn("Service " + serviceId + " not found");
             return;
@@ -119,10 +126,10 @@ public class ServiceService {
         MessageDTO dto = MessageDTO.from(message).build();
         switch (service.getSendType()) {
         case QUEUE:
-            this.broker.publishExchange(service.getExchangeName(), service.getRouteKey(), null, this.mapper.writeValueAsBytes(dto));
+            this.broker.publishQueue(service.getRouteKey(), null, this.mapper.writeValueAsBytes(dto));
             break;
         case EXCHANGE:
-            this.broker.publishQueue(service.getExchangeName(), null, this.mapper.writeValueAsBytes(dto));
+            this.broker.publishExchange(service.getExchangeName(), service.getRouteKey(), null, this.mapper.writeValueAsBytes(dto));
             break;
         default:
             throw new RuntimeException("Unimplemented service send type " + service.getSendType());
@@ -140,7 +147,7 @@ public class ServiceService {
         }
     }
 
-    private void processServiceMessage(String clientId, MessageDTO messageDTO, String route) throws IOException, InterruptedException, TimeoutException, ServiceNotFoundException {
+    private void processServiceMessage(String clientId, MessageDTO messageDTO, String route) throws IOException, InterruptedException, TimeoutException, MiddlewareException {
         Service service = this.repository.findByRoute(route);
         if (service == null) {
             throw new ServiceNotFoundException(route);
@@ -170,6 +177,9 @@ public class ServiceService {
         }
         if (messageDTO.getData().isEmpty()) {
             throw new MiddlewareException("Message without Data");
+        }
+        if (messageDTO.getRoute() == null || messageDTO.getRoute().isEmpty()) {
+            throw new MiddlewareException("Message without Route");
         }
     }
 

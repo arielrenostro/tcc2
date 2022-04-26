@@ -1,14 +1,18 @@
 package br.furb.ariel.middleware.message.model;
 
+import io.quarkus.mongodb.panache.common.MongoEntity;
 import lombok.Data;
+import org.bson.types.ObjectId;
 
 import java.util.Date;
 import java.util.Map;
 
 @Data
+@MongoEntity(collection = "messages")
 public class Message {
 
-    private String id;
+    private ObjectId id;
+    private String messageId;
     private String answerId;
     private MessageStatus status;
     private Destination origin;

@@ -141,17 +141,19 @@ public class WebsocketService {
         websocketSessions.parallelStream().forEach(websocketSession -> this.clientService.deregister(websocketSession));
     }
 
-    public void send(String clientId, String message) {
+    public void send(String clientId, String message) throws IOException {
         Optional<WebsocketSession> optional = this.websocketSessionById.values() //
                 .stream() //
                 .filter(websocketSession -> Objects.equals(clientId, websocketSession.getClientId())) //
                 .findFirst();
-        optional.ifPresent(websocketSession -> send(websocketSession, message));
+        if (optional.isPresent()) {
+            send(optional.get(), message);
+        }
     }
 
-    public void send(WebsocketSession websocketSession, String message) {
+    public void send(WebsocketSession websocketSession, String message) throws IOException {
         Session session = websocketSession.getSession();
-        session.getAsyncRemote().sendText(message);
+        session.getBasicRemote().sendText(message);
     }
 
     public void putSession(Session session) {
@@ -197,7 +199,11 @@ public class WebsocketService {
         public void run(Delivery message) {
             String clientId = getClientId(message);
             this.logger.info("Sending message to client " + clientId);
-            send(clientId, new String(message.getBody()));
+            try {
+                send(clientId, new String(message.getBody()));
+            } catch (Exception e) {
+                this.logger.error(e.getMessage(), e);
+            }
         }
 
         private String getClientId(Delivery message) {
