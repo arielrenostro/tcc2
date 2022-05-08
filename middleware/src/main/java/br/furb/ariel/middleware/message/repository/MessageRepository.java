@@ -6,6 +6,7 @@ import br.furb.ariel.middleware.message.model.Message;
 import io.quarkus.panache.common.Parameters;
 
 import javax.inject.Singleton;
+import java.util.Date;
 import java.util.List;
 
 @Singleton
@@ -13,15 +14,21 @@ public class MessageRepository extends BaseRepository<Message> {
 
     public List<Message> findPendingMessagesByClient(String clientId) {
         return this.list( //
-                "{'destination.type': :type, 'destination._id': :id}", //
-                Parameters.with("type", DestinationType.CLIENT).and("id", clientId) //
+                "{'destination.type': :type, 'destination._id': :id, 'expiresIn': {$gt: :ttl}}", //
+                Parameters //
+                        .with("type", DestinationType.CLIENT) //
+                        .and("id", clientId) //
+                        .and("ttl", new Date()) //
         );
     }
 
     public List<Message> findPendingMessagesByService(String serviceId) {
         return this.list( //
-                "{'destination.type': :type, 'destination._id': :id}", //
-                Parameters.with("type", DestinationType.SERVICE).and("id", serviceId) //
+                "{'destination.type': :type, 'destination._id': :id, 'expiresIn': {$gt: :ttl}}", //
+                Parameters //
+                        .with("type", DestinationType.SERVICE) //
+                        .and("id", serviceId) //
+                        .and("ttl", new Date()) //
         );
     }
 

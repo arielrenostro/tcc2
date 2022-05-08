@@ -1,0 +1,43 @@
+ws://localhost:8080/websocket?id=25281752-b4f5-43d5-9d1e-44d3f9a963f4
+{
+    "id": "818e875f-2cdb-401d-ac81-6860ad588bb5",
+    "route": "chat",
+    "ttl": 1652494335000,
+    "data": {
+        "test": "valorTest"
+    }
+}
+
+{
+    "id": "6fbd855f-a171-4d77-b012-65b98d3cc2af",
+    "answerId": "1797339b-700c-4e7f-ab7e-8af9e624b866",
+    "route": "middleware",
+    "ttl": 1,
+    "data": {
+        "type": "CONFIRM_MESSAGE"
+    }
+}
+
+
+----------------------------
+serviceId = 6267470ac1838404832386e7
+{
+    "id": "a84f0674-1b46-42fa-aac5-330df20e8243",
+    "type": "GET_PENDING_MESSAGES"
+}
+
+{
+    "id": "15a04397-3f6d-4f00-90e3-544be4702ce7",
+    "type": "CONFIRM_MESSAGE",
+    "answerId": "818e875f-2cdb-401d-ac81-6860ad588bb5"
+}
+
+{
+    "id": "1797339b-700c-4e7f-ab7e-8af9e624b866",
+    "type": "SEND_MESSAGE",
+    "clientId": "25281752-b4f5-43d5-9d1e-44d3f9a963f4",
+    "ttl": 1652236374000,
+    "data": {
+        "teste": "valorServerTest"
+    }
+}

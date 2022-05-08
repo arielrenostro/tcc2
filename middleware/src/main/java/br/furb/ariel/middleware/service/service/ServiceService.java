@@ -59,6 +59,11 @@ public class ServiceService extends BaseService<Service, ServiceRepository> {
     }
 
     public void handleNotification(String serviceId, byte[] message) {
+        if (serviceId == null) {
+            this.logger.error("Unknow serviceId: " + new String(message));
+            return;
+        }
+
         ServiceNotificationDTO notification;
         try {
             notification = this.mapper.readValue(message, ServiceNotificationDTO.class);
@@ -216,7 +221,11 @@ public class ServiceService extends BaseService<Service, ServiceRepository> {
         private String getServiceId(Delivery message) {
             BasicProperties properties = message.getProperties();
             Map<String, Object> headers = properties.getHeaders();
-            return String.valueOf(headers.get("serviceId"));
+            Object serviceId = headers.get("serviceId");
+            if (serviceId != null) {
+                return String.valueOf(serviceId);
+            }
+            return null;
         }
     }
 }
