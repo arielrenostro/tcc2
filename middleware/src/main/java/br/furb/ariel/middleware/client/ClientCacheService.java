@@ -1,6 +1,6 @@
 package br.furb.ariel.middleware.client;
 
-import br.furb.ariel.middleware.cache.CacheService;
+import br.furb.ariel.middleware.core.BaseCacheService;
 import br.furb.ariel.middleware.config.Config;
 import br.furb.ariel.middleware.container.ContainerService;
 
@@ -8,7 +8,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class ClientCacheService extends CacheService {
+public class ClientCacheService extends BaseCacheService {
 
     @Inject
     ContainerService containerService;

@@ -14,6 +14,7 @@ public class Message {
     private ObjectId id;
     private String messageId;
     private String answerId;
+    private String route;
     private MessageStatus status;
     private Destination origin;
     private Destination destination;

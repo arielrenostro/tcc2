@@ -58,6 +58,18 @@ public class ServiceService extends BaseService<Service, ServiceRepository> {
         return this.repository;
     }
 
+    @Override
+    public void persist(Service entity) throws MiddlewareException {
+        for (String route : entity.getRoutes()) {
+            Service serviceByRoute = this.repository.findByRoute(route);
+            if (serviceByRoute != null) {
+                throw new MiddlewareException("Already exists a Service with route " + route);
+            }
+        }
+
+        super.persist(entity);
+    }
+
     public void handleNotification(String serviceId, byte[] message) {
         if (serviceId == null) {
             this.logger.error("Unknow serviceId: " + new String(message));

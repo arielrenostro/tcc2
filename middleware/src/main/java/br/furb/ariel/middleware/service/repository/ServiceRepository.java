@@ -9,6 +9,6 @@ import javax.inject.Singleton;
 public class ServiceRepository extends BaseRepository<Service> {
 
     public Service findByRoute(String route) {
-        return this.find("messageTypes", route).firstResult();
+        return this.find("routes", route).firstResult();
     }
 }

@@ -16,6 +16,6 @@ public class Service {
     private ServiceSendType sendType;
     private String exchangeName;
     private String routeKey;
-    private List<String> messageTypes = new ArrayList<>();
+    private List<String> routes = new ArrayList<>();
 
 }

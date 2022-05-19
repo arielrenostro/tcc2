@@ -18,6 +18,7 @@ public class MessageDTO {
     private String id;
     private String answerId;
     private String route;
+    private String from;
     private Map<String, Object> data;
     private Date ttl;
 
@@ -41,6 +42,8 @@ public class MessageDTO {
 
         private String id;
         private String answerId;
+        private String route;
+        private String from;
         private Map<String, Object> data;
         private Date ttl;
 
@@ -52,6 +55,8 @@ public class MessageDTO {
             MessageDTO dto = new MessageDTO();
             dto.setId(this.id);
             dto.setAnswerId(this.answerId);
+            dto.setRoute(this.route);
+            dto.setFrom(this.from);
             dto.setData(new HashMap<>(this.data));
             dto.setTtl(this.ttl);
             return dto;
@@ -77,6 +82,8 @@ public class MessageDTO {
         public Builder from(Message message) {
             this.id = String.valueOf(message.getMessageId());
             this.answerId = message.getAnswerId();
+            this.route = message.getRoute();
+            this.from = message.getOrigin().getId();
             this.data = new HashMap<>(message.getData());
             return this;
         }

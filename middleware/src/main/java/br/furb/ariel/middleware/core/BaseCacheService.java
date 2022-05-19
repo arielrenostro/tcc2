@@ -1,4 +1,4 @@
-package br.furb.ariel.middleware.cache;
+package br.furb.ariel.middleware.core;
 
 import io.quarkus.redis.client.RedisClient;
 
@@ -6,14 +6,14 @@ import javax.inject.Inject;
 import java.time.Duration;
 import java.util.List;
 
-public abstract class CacheService {
+public abstract class BaseCacheService {
 
     private final String prefix;
 
     @Inject
     RedisClient redisClient;
 
-    protected CacheService(String prefix) {
+    protected BaseCacheService(String prefix) {
         this.prefix = prefix;
     }
 

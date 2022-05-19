@@ -72,12 +72,14 @@ public class MessageService {
     private Message createMessage(MessageDTO messageDTO) {
         String id = messageDTO.getId();
         String answerId = messageDTO.getAnswerId();
+        String route = messageDTO.getRoute();
         Date ttl = messageDTO.getTtl();
         Map<String, Object> data = messageDTO.getData();
 
         Message message = new Message();
         message.setMessageId(id);
         message.setAnswerId(answerId);
+        message.setRoute(route);
         message.setStatus(MessageStatus.PENDING);
         message.setCreatedAt(new Date());
         message.setExpiresIn(ttl);

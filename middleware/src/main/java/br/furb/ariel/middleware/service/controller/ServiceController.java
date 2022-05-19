@@ -1,9 +1,11 @@
 package br.furb.ariel.middleware.service.controller;
 
+import br.furb.ariel.middleware.exception.MiddlewareException;
 import br.furb.ariel.middleware.service.model.Service;
 import br.furb.ariel.middleware.service.service.ServiceService;
 
 import javax.inject.Inject;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -32,8 +34,12 @@ public class ServiceController {
     @Consumes(MediaType.APPLICATION_JSON)
     public Service save(Service service) {
         service.setId(null);
-        this.service.persist(service);
-        return service;
+        try {
+            this.service.persist(service);
+            return service;
+        } catch (MiddlewareException e) {
+            throw new BadRequestException(e.getMessage());
+        }
     }
 
     @GET
