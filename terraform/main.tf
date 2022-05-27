@@ -91,7 +91,9 @@ module "load_balancer" {
 module "cache" {
   source = "./modules/cache"
 
-  env             = var.env
+  env     = var.env
+  route53 = var.dns.route53
+
   subnets         = [module.vpc.subnet_a.id]
   security_groups = [module.sg.middleware_cache]
 }
@@ -99,7 +101,9 @@ module "cache" {
 module "mq" {
   source = "./modules/mq"
 
-  env             = var.env
+  env     = var.env
+  route53 = var.dns.route53
+
   instance_type   = "mq.t3.micro"
   username        = "admin"
   password        = "@Batata-1234"

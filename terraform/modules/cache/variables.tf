@@ -10,3 +10,11 @@ variable "subnets" {
 variable "security_groups" {
   type = set(string)
 }
+
+variable "route53" {
+  description = "Route 53"
+  type        = object({
+    domain  = string
+    zone_id = string
+  })
+}

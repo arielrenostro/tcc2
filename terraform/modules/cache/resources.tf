@@ -18,3 +18,11 @@ resource "aws_elasticache_cluster" "middleware" {
   cluster_id           = "cluster-middleware"
   replication_group_id = aws_elasticache_replication_group.middleware.id
 }
+
+resource "aws_route53_record" "mq" {
+  zone_id = var.route53.zone_id
+  name    = "cache.${var.env}.${var.route53.domain}"
+  type    = "CNAME"
+  ttl     = "300"
+  records = [aws_elasticache_cluster.middleware.cluster_address]
+}
