@@ -87,3 +87,22 @@ module "load_balancer" {
   middleware_subnets          = [module.vpc.subnet_a_public.id]
   middleware_target_group_arn = module.middleware.lb_target
 }
+
+module "cache" {
+  source = "./modules/cache"
+
+  env             = var.env
+  subnets         = [module.vpc.subnet_a.id]
+  security_groups = [module.sg.middleware_cache]
+}
+
+module "mq" {
+  source = "./modules/mq"
+
+  env             = var.env
+  instance_type   = "mq.t3.micro"
+  username        = "admin"
+  password        = "@Batata-1234"
+  subnets         = [module.vpc.subnet_a.id]
+  security_groups = [module.sg.middleware_mq]
+}
