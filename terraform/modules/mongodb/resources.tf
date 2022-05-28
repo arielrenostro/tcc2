@@ -33,7 +33,10 @@ resource "aws_instance" "mongodb" {
     gpgkey=https://www.mongodb.org/static/pgp/server-5.0.asc
     EOF
 
-      yum install -y mongodb-org
+    yum install -y mongodb-org
+
+    sed 's/bindIp: 127.0.0.1/bindIp: 0.0.0.0/g' /etc/mongod.conf > /etc/mongod.conf.new
+    yes | mv /etc/mongod.conf.new /etc/mongod.conf
 
     systemctl enable mongod
     service mongod start

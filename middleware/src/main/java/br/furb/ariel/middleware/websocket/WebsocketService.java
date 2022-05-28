@@ -59,13 +59,19 @@ public class WebsocketService {
 
         Session session = getSession(sessionId);
         String clientId = getId(session);
-        if (clientId != null) {
-            WebsocketSession websocketSession = new WebsocketSession(session, clientId);
-            this.websocketSessionById.put(sessionId, websocketSession);
-            this.clientService.register(websocketSession);
-        } else {
-            this.logger.warn("Session " + sessionId + " without client id");
-            session.close(new CloseReason(CloseCodes.NORMAL_CLOSURE, "Missing UUID"));
+
+        try {
+            if (clientId != null) {
+                WebsocketSession websocketSession = new WebsocketSession(session, clientId);
+                this.websocketSessionById.put(sessionId, websocketSession);
+                this.clientService.register(websocketSession);
+            } else {
+                this.logger.warn("Session " + sessionId + " without client id");
+                session.close(new CloseReason(CloseCodes.NORMAL_CLOSURE, "Missing UUID"));
+            }
+        } catch (Exception e) {
+            this.logger.error(e.getMessage(), e);
+            session.close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "Internal Error"));
         }
 
         return Uni.createFrom().voidItem();
@@ -88,6 +94,8 @@ public class WebsocketService {
             send(websocketSession, this.mapper.writeValueAsString(response));
         } catch (JsonProcessingException e) {
             this.logger.error("Failure to desserialize JSON: " + e.getMessage() + " - " + message);
+            MessageDTO response = MessageDTO.error(null, e.getMessage()).build();
+            send(websocketSession, this.mapper.writeValueAsString(response));
 
         } catch (MiddlewareException e) {
             MessageDTO response = MessageDTO.error(messageDTO.getId(), e.getMessage()).build();

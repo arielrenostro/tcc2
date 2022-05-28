@@ -77,7 +77,7 @@ resource "aws_ecs_task_definition" "middleware" {
           valueFrom = "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/middleware/${var.env}/MQ_PASSWORD"
         },
         {
-          name      = "QUARKUS_REDIS_HOST"
+          name      = "QUARKUS_REDIS_HOSTS"
           valueFrom = "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/middleware/${var.env}/CACHE_WRITE_HOST"
         },
         {

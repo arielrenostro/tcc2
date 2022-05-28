@@ -21,3 +21,7 @@ variable "cache_write_host" {
 variable "cache_read_host" {
   type = string
 }
+
+variable "mongodb_host" {
+  type = string
+}

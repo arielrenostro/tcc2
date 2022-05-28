@@ -2,9 +2,11 @@ package br.furb.ariel.middleware.message.dto;
 
 import br.furb.ariel.middleware.message.model.Message;
 import br.furb.ariel.middleware.service.dto.ServiceNotificationDTO;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -12,7 +14,9 @@ import java.util.Map;
 import java.util.UUID;
 
 @Data
+@NoArgsConstructor
 @JsonInclude(Include.NON_EMPTY)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class MessageDTO {
 
     private String id;

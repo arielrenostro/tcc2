@@ -145,6 +145,8 @@ module "parameter_store" {
 
   env = var.env
 
+  mongodb_host = module.mongodb.host
+
   cache_write_host = module.cache.write_host
   cache_read_host  = module.cache.read_host
 

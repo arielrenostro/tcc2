@@ -27,3 +27,9 @@ resource "aws_ssm_parameter" "cache_read_host" {
   type  = "String"
   value = "redis://${var.cache_read_host}:6379"
 }
+
+resource "aws_ssm_parameter" "mongo_host" {
+  name  = "/middleware/${var.env}/DB_CONNECTION_STRING"
+  type  = "String"
+  value = "mongodb://${var.mongodb_host}:27017"
+}
