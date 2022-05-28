@@ -24,10 +24,3 @@ variable "subnets" {
   type = set(string)
 }
 
-variable "route53" {
-  description = "Route 53"
-  type        = object({
-    domain  = string
-    zone_id = string
-  })
-}

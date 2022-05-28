@@ -13,3 +13,7 @@ output "middleware_cache" {
 output "middleware_mq" {
   value = aws_security_group.middleware_mq.id
 }
+
+output "bastion" {
+  value = aws_security_group.bastion.id
+}

@@ -20,11 +20,3 @@ resource "aws_mq_broker" "mq" {
     Name = "middleware-${var.env}"
   }
 }
-
-resource "aws_route53_record" "mq" {
-  zone_id = var.route53.zone_id
-  name    = "mq.${var.env}.${var.route53.domain}"
-  type    = "CNAME"
-  ttl     = "300"
-  records = ["${aws_mq_broker.mq.id}.mq.${data.aws_region.current.name}.amazonaws.com"]
-}

@@ -32,3 +32,13 @@ variable "logs_retention" {
   description = "CloudWatch logs retention in days"
   type        = number
 }
+
+variable "subnets_ids" {
+  description = "Subnet Ids"
+  type        = set(string)
+}
+
+variable "security_groups" {
+  description = "Security Groups IDs"
+  type        = set(string)
+}
