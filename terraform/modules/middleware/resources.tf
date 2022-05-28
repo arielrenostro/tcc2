@@ -33,6 +33,57 @@ resource "aws_ecs_task_definition" "middleware" {
       ]
 
       environment = [
+        {
+          name  = "RABBITMQ_PORT"
+          value = "5671"
+        },
+        {
+          name  = "RABBITMQ_VHOST"
+          value = "/"
+        },
+        {
+          name  = "RABBITMQ_SSL"
+          value = "true"
+        },
+        {
+          name  = "RABBITMQ_TIMEOUT_PUBLISH"
+          value = "2000"
+        },
+        {
+          name  = "CONSUMERS_TO_SEND"
+          value = "10"
+        },
+        {
+          name  = "CACHE_CLIENT_REGISTER_TIMEOUT"
+          value = "30000"
+        },
+        {
+          name  = "QUARKUS_MONGODB_DATABASE"
+          value = "middleware"
+        },
+      ]
+
+      secrets = [
+        {
+          name      = "RABBITMQ_HOST"
+          valueFrom = "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/middleware/${var.env}/MQ_HOST"
+        },
+        {
+          name      = "RABBITMQ_USERNAME"
+          valueFrom = "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/middleware/${var.env}/MQ_USERNAME"
+        },
+        {
+          name      = "RABBITMQ_PASSWORD"
+          valueFrom = "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/middleware/${var.env}/MQ_PASSWORD"
+        },
+        {
+          name      = "QUARKUS_REDIS_HOST"
+          valueFrom = "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/middleware/${var.env}/CACHE_WRITE_HOST"
+        },
+        {
+          name      = "QUARKUS_MONGODB_CONNECTION_STRING"
+          valueFrom = "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/middleware/${var.env}/DB_CONNECTION_STRING"
+        }
       ]
 
       logConfiguration = {
@@ -45,14 +96,6 @@ resource "aws_ecs_task_definition" "middleware" {
       }
     }
   ])
-
-  lifecycle {
-    ignore_changes = [
-      cpu,
-      memory,
-      container_definitions
-    ]
-  }
 }
 
 resource "aws_ecs_service" "middleware" {
@@ -72,13 +115,6 @@ resource "aws_ecs_service" "middleware" {
     target_group_arn = aws_lb_target_group.middleware.arn
     container_name   = "middleware-${var.env}"
     container_port   = 8080
-  }
-
-  lifecycle {
-    ignore_changes = [
-      desired_count,
-      task_definition,
-    ]
   }
 }
 

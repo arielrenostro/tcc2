@@ -152,3 +152,17 @@ module "parameter_store" {
   mq_username = module.mq.username
   mq_password = module.mq.password
 }
+
+module "mongodb" {
+  source = "./modules/mongodb"
+
+  env     = var.env
+  route53 = var.dns.route53
+
+  instance_type   = "m6g.large"
+  ami             = "ami-02cb75f995890cd96"
+  subnet          = module.vpc.subnet_a_private
+  security_groups = [module.sg.mongodb]
+
+  public_key = var.mongodb_public_key
+}

@@ -95,9 +95,9 @@ resource "aws_eip" "nat" {
 
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.subnet_middleware_a.id
+  subnet_id     = aws_subnet.subnet_middleware_a_public.id
 
-  tags          = {
+  tags = {
     Name = "nat-middleware-${var.env}"
   }
 }

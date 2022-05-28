@@ -19,11 +19,11 @@ resource "aws_ssm_parameter" "mq_password" {
 resource "aws_ssm_parameter" "cache_write_host" {
   name  = "/middleware/${var.env}/CACHE_WRITE_HOST"
   type  = "String"
-  value = var.cache_write_host
+  value = "redis://${var.cache_write_host}:6379"
 }
 
 resource "aws_ssm_parameter" "cache_read_host" {
   name  = "/middleware/${var.env}/CACHE_READ_HOST"
   type  = "String"
-  value = var.cache_read_host
+  value = "redis://${var.cache_read_host}:6379"
 }

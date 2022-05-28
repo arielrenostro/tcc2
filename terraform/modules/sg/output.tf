@@ -17,3 +17,7 @@ output "middleware_mq" {
 output "bastion" {
   value = aws_security_group.bastion.id
 }
+
+output "mongodb" {
+  value = aws_security_group.mongodb.id
+}
