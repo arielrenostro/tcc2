@@ -4,6 +4,10 @@ import br.furb.ariel.middleware.broker.Consumer;
 import br.furb.ariel.middleware.client.ClientService;
 import br.furb.ariel.middleware.exception.MiddlewareException;
 import br.furb.ariel.middleware.message.dto.MessageDTO;
+import br.furb.ariel.middleware.metrics.model.NewConnectionMetric;
+import br.furb.ariel.middleware.metrics.model.ReceivedWebSocketMessageMetric;
+import br.furb.ariel.middleware.metrics.model.SendWebSocketMessageMetric;
+import br.furb.ariel.middleware.metrics.service.MetricsService;
 import br.furb.ariel.middleware.service.service.ServiceService;
 import br.furb.ariel.middleware.websocket.dto.WebsocketErrorEvent;
 import br.furb.ariel.middleware.websocket.dto.WebsocketMessageEvent;
@@ -51,11 +55,15 @@ public class WebsocketService {
     ServiceService serviceService;
 
     @Inject
+    MetricsService metricsService;
+
+    @Inject
     ObjectMapper mapper;
 
     @ConsumeEvent(value = "websocket-onopen", blocking = true)
     public Uni<Void> onOpen(String sessionId) throws IOException, InterruptedException, TimeoutException {
         this.logger.info("New Session " + sessionId);
+        this.metricsService.publish(new NewConnectionMetric());
 
         Session session = getSession(sessionId);
         String clientId = getId(session);
@@ -81,8 +89,10 @@ public class WebsocketService {
     @ConsumeEvent(value = "websocket-onmessage", blocking = true)
     public Uni<Void> onMessage(WebsocketMessageEvent event) {
         String message = event.getMessage();
-        WebsocketSession websocketSession = getWebsocketSession(event.getId());
 
+        this.metricsService.publish(new ReceivedWebSocketMessageMetric(message.length()));
+
+        WebsocketSession websocketSession = getWebsocketSession(event.getId());
         this.clientService.updateRegistration(websocketSession);
 
         MessageDTO messageDTO = null;
@@ -144,6 +154,10 @@ public class WebsocketService {
         return Set.copyOf(this.websocketSessionById.values());
     }
 
+    public int getConnectionsAmount() {
+        return this.websocketSessionById.size();
+    }
+
     public void deregisterClients() {
         Set<WebsocketSession> websocketSessions = Set.copyOf(this.websocketSessionById.values());
         websocketSessions.parallelStream().forEach(websocketSession -> this.clientService.deregister(websocketSession));
@@ -160,6 +174,8 @@ public class WebsocketService {
     }
 
     public void send(WebsocketSession websocketSession, String message) throws IOException {
+        this.metricsService.publish(new SendWebSocketMessageMetric(message.length()));
+
         Session session = websocketSession.getSession();
         session.getBasicRemote().sendText(message);
     }

@@ -16,6 +16,7 @@ public class Config {
     public static final Duration WEBSOCKET_PING_TIMEOUT = Duration.ofSeconds(5);
     public static final Duration WEBSOCKET_PING_INTERNAL = Duration.ofSeconds(20);
     public static final String WEBSOCKET_CHECK_PING_JOB_INTERVAL = "10s";
+    public static final String METRICS_JOB_INTERVAL = "10s";
 
     @ConfigProperty(name = "RABBITMQ_HOST")
     String rabbitmqHost;
@@ -40,6 +41,12 @@ public class Config {
 
     @ConfigProperty(name = "CONSUMERS_TO_SEND")
     int consumersToSend;
+
+    @ConfigProperty(name = "INFLUXDB_CONNECTION_STRING")
+    String influxDBConnectionString;
+
+    @ConfigProperty(name = "INFLUXDB_DATABASE")
+    String influxDBDatabase;
 
     public Config() {
 
@@ -77,4 +84,11 @@ public class Config {
         return consumersToSend;
     }
 
+    public String getInfluxDBConnectionString() {
+        return influxDBConnectionString;
+    }
+
+    public String getInfluxDBDatabase() {
+        return influxDBDatabase;
+    }
 }

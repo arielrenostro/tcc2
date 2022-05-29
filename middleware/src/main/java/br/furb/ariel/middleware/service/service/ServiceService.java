@@ -12,6 +12,9 @@ import br.furb.ariel.middleware.message.model.Destination;
 import br.furb.ariel.middleware.message.model.DestinationType;
 import br.furb.ariel.middleware.message.model.Message;
 import br.furb.ariel.middleware.message.service.MessageService;
+import br.furb.ariel.middleware.metrics.model.ReceivedServiceMessageMetric;
+import br.furb.ariel.middleware.metrics.model.SendServiceMessageMetric;
+import br.furb.ariel.middleware.metrics.service.MetricsService;
 import br.furb.ariel.middleware.service.dto.ServiceNotificationDTO;
 import br.furb.ariel.middleware.service.model.Service;
 import br.furb.ariel.middleware.service.repository.ServiceRepository;
@@ -52,6 +55,9 @@ public class ServiceService extends BaseService<Service, ServiceRepository> {
 
     @Inject
     Logger logger;
+
+    @Inject
+    MetricsService metricsService;
 
     @Override
     protected ServiceRepository getRepository() {
@@ -141,12 +147,16 @@ public class ServiceService extends BaseService<Service, ServiceRepository> {
         }
 
         MessageDTO dto = MessageDTO.from(message).build();
+        byte[] bytes = this.mapper.writeValueAsBytes(dto);
+
+        this.metricsService.publish(new SendServiceMessageMetric(bytes.length));
+
         switch (service.getSendType()) {
         case QUEUE:
-            this.broker.publishQueue(service.getRouteKey(), null, this.mapper.writeValueAsBytes(dto));
+            this.broker.publishQueue(service.getRouteKey(), null, bytes);
             break;
         case EXCHANGE:
-            this.broker.publishExchange(service.getExchangeName(), service.getRouteKey(), null, this.mapper.writeValueAsBytes(dto));
+            this.broker.publishExchange(service.getExchangeName(), service.getRouteKey(), null, bytes);
             break;
         default:
             throw new RuntimeException("Unimplemented service send type " + service.getSendType());
@@ -225,9 +235,13 @@ public class ServiceService extends BaseService<Service, ServiceRepository> {
 
         @Override
         public void run(Delivery message) {
+            byte[] body = message.getBody();
+
+            ServiceService.this.metricsService.publish(new ReceivedServiceMessageMetric(body.length));
+
             String serviceId = getServiceId(message);
             this.logger.info("Received a notification from service " + serviceId);
-            handleNotification(serviceId, message.getBody());
+            handleNotification(serviceId, body);
         }
 
         private String getServiceId(Delivery message) {
