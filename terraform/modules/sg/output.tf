@@ -21,3 +21,7 @@ output "bastion" {
 output "mongodb" {
   value = aws_security_group.mongodb.id
 }
+
+output "influxdb" {
+  value = aws_security_group.influxdb.id
+}

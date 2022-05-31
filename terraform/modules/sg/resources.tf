@@ -192,3 +192,44 @@ resource "aws_security_group_rule" "mongodb_out_all" {
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.mongodb.id
 }
+
+
+resource "aws_security_group" "influxdb" {
+  name        = "influxdb-${var.env}"
+  description = "influxdb-${var.env}"
+  vpc_id      = var.vpc_id
+
+  tags = {
+    Name = "influxdb-${var.env}"
+  }
+}
+
+resource "aws_security_group_rule" "influxdb_in_ssh" {
+  type                     = "ingress"
+  description              = "SSH - All"
+  protocol                 = "tcp"
+  from_port                = 22
+  to_port                  = 22
+  source_security_group_id = aws_security_group.bastion.id
+  security_group_id        = aws_security_group.influxdb.id
+}
+
+resource "aws_security_group_rule" "influxdb_in_ecs" {
+  type                     = "ingress"
+  description              = "InfluxDB - ECS"
+  protocol                 = "tcp"
+  from_port                = 8086
+  to_port                  = 8086
+  source_security_group_id = aws_security_group.middleware_ecs.id
+  security_group_id        = aws_security_group.influxdb.id
+}
+
+resource "aws_security_group_rule" "influxdb_out_all" {
+  type              = "egress"
+  description       = "Output default"
+  protocol          = "-1"
+  from_port         = 0
+  to_port           = 0
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.influxdb.id
+}

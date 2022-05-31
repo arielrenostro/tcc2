@@ -168,3 +168,17 @@ module "mongodb" {
 
   public_key = var.mongodb_public_key
 }
+
+module "influxdb" {
+  source = "./modules/influxdb"
+
+  env     = var.env
+  route53 = var.dns.route53
+
+  instance_type   = "t4g.micro"
+  ami             = "ami-02cb75f995890cd96"
+  subnet          = module.vpc.subnet_a_private
+  security_groups = [module.sg.influxdb]
+
+  public_key = var.influxdb_public_key
+}
