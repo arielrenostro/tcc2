@@ -4,7 +4,8 @@ ws://localhost:8080/websocket?id=25281752-b4f5-43d5-9d1e-44d3f9a963f4
     "route": "chat",
     "ttl": 1652494335000,
     "data": {
-        "test": "valorTest"
+        "to": "123456",
+        "message": "batata"
     }
 }
 
