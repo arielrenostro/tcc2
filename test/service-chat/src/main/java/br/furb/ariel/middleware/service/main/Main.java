@@ -1,7 +1,6 @@
 package br.furb.ariel.middleware.service.main;
 
 import br.furb.ariel.middleware.service.broker.Broker;
-import br.furb.ariel.middleware.service.broker.Consumer;
 import br.furb.ariel.middleware.service.config.Config;
 import br.furb.ariel.middleware.service.dto.MessageDTO;
 import br.furb.ariel.middleware.service.dto.ServiceNotificationDTO;
@@ -10,16 +9,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Delivery;
 
 import java.io.IOException;
+import java.sql.Time;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public class Main {
 
     private final Broker broker = new Broker();
     private final ObjectMapper mapper = new ObjectMapper();
+
+    private long lastMessageTime;
 
     public Main() throws IOException, InterruptedException, TimeoutException {
         this.broker.createRoutedExchange(Config.RABBITMQ_INPUT_QUEUE + ".dead", true);
@@ -32,6 +37,23 @@ public class Main {
             System.out.println("Consuming queue " + Config.RABBITMQ_INPUT_QUEUE + " " + i);
             this.broker.consumeQueue(Config.RABBITMQ_INPUT_QUEUE, this::handle);
         }
+
+        ScheduledExecutorService scheduled = Executors.newSingleThreadScheduledExecutor();
+        scheduled.scheduleWithFixedDelay(() -> {
+            System.out.println("Checking if need to get pending messages");
+            if (this.lastMessageTime == 0 || this.lastMessageTime + (1000 * 60) < System.currentTimeMillis()) {
+                System.out.println("Getting pending messages");
+                ServiceNotificationDTO dto = new ServiceNotificationDTO();
+                dto.setId(UUID.randomUUID().toString());
+                dto.setType(ServiceNotificationType.GET_PENDING_MESSAGES);
+                try {
+                    sendToMiddleware(dto);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 5, 60, TimeUnit.SECONDS);
+        Runtime.getRuntime().addShutdownHook(new Thread(scheduled::shutdownNow));
     }
 
     public static void main(String[] args) throws IOException, InterruptedException, TimeoutException {
@@ -41,6 +63,8 @@ public class Main {
 
     private void handle(Delivery message) {
         try {
+            this.lastMessageTime = System.currentTimeMillis();
+
             MessageDTO messageDTO = this.mapper.readValue(message.getBody(), MessageDTO.class);
             System.out.println("Received a message from " + messageDTO.getFrom());
 
