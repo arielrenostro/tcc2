@@ -1,6 +1,7 @@
 package br.furb.ariel.middleware.core;
 
 import io.quarkus.redis.client.RedisClient;
+import io.vertx.redis.client.Response;
 
 import javax.inject.Inject;
 import java.time.Duration;
@@ -19,7 +20,11 @@ public abstract class BaseCacheService {
 
     public String get(String key) {
         String realKey = buildKey(key);
-        return this.redisClient.get(realKey).toString();
+        Response obj = this.redisClient.get(realKey);
+        if (obj != null) {
+            return obj.toString();
+        }
+        return null;
     }
 
     public void setex(String key, String value, Duration duration) {

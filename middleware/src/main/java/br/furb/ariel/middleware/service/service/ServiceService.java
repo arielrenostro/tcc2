@@ -202,6 +202,9 @@ public class ServiceService extends BaseService<Service, ServiceRepository> {
         if (messageDTO.getTtl() == null) {
             throw new MiddlewareException("Message without TTL");
         }
+        if (messageDTO.getTtl().getTime() <= System.currentTimeMillis()) {
+            throw new MiddlewareException("Message with TTL already expired");
+        }
         if (messageDTO.getData().isEmpty()) {
             throw new MiddlewareException("Message without Data");
         }
@@ -216,6 +219,9 @@ public class ServiceService extends BaseService<Service, ServiceRepository> {
         }
         if (notificationDTO.getTtl() == null) {
             throw new MiddlewareException("Notification from " + serviceId + " without TTL");
+        }
+        if (notificationDTO.getTtl().getTime() <= System.currentTimeMillis()) {
+            throw new MiddlewareException("Notification from " + serviceId + " with TTL already expired");
         }
         if (notificationDTO.getData().isEmpty()) {
             throw new MiddlewareException("Notification from " + serviceId + " without Data");
