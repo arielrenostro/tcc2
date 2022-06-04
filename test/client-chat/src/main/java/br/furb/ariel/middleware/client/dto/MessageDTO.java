@@ -28,16 +28,11 @@ public class MessageDTO {
         return new Builder().ok(answerId);
     }
 
-    public static Builder error(String answerId, String message) {
-        return new Builder().error(answerId, message);
-    }
-
     public static class Builder {
 
         private String id;
         private String answerId;
         private String route;
-        private String from;
         private Map<String, Object> data;
         private Date ttl;
 
@@ -50,7 +45,6 @@ public class MessageDTO {
             dto.setId(this.id);
             dto.setAnswerId(this.answerId);
             dto.setRoute(this.route);
-            dto.setFrom(this.from);
             dto.setData(new HashMap<>(this.data));
             dto.setTtl(this.ttl);
             return dto;
@@ -59,17 +53,10 @@ public class MessageDTO {
         public Builder ok(String answerId) {
             this.id = UUID.randomUUID().toString();
             this.answerId = answerId;
+            this.route = "middleware";
+            this.ttl = new Date(System.currentTimeMillis() + 10000);
             this.data = new HashMap<>();
-            this.data.put("status", "OK");
-            return this;
-        }
-
-        public Builder error(String answerId, String message) {
-            this.id = UUID.randomUUID().toString();
-            this.answerId = answerId;
-            this.data = new HashMap<>();
-            this.data.put("status", "ERROR");
-            this.data.put("message", message);
+            this.data.put("type", "CONFIRM_MESSAGE");
             return this;
         }
 

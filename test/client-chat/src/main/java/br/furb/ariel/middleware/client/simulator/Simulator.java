@@ -3,20 +3,17 @@ package br.furb.ariel.middleware.client.simulator;
 import br.furb.ariel.middleware.client.config.Config;
 import br.furb.ariel.middleware.client.dto.MessageDTO;
 import br.furb.ariel.middleware.client.utils.RandomUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -40,7 +37,7 @@ class Simulator {
     private final ScheduledExecutorService executor;
     private final Map<String, Semaphore> semaphoreByIds = new ConcurrentHashMap<>();
     private final Random random = new Random();
-    private final BlockingQueue<MessageDTO> toPublish = new ArrayBlockingQueue<>(1000);
+    private final BlockingQueue<MessageDTO> toSend = new ArrayBlockingQueue<>(1000);
 
     private WebSocket ws;
     private boolean stoped;
@@ -117,7 +114,7 @@ class Simulator {
                         Simulator.this.executor.submit(Simulator.this::stop);
                         break;
                     }
-                    MessageDTO message = this.toPublish.poll(99999, TimeUnit.DAYS);
+                    MessageDTO message = this.toSend.poll(99999, TimeUnit.DAYS);
                     if (message != null) {
                         System.out.println(this.clientId + " - Sending a new Message " + message.getId());
 
@@ -130,6 +127,8 @@ class Simulator {
 
                         if (this.semaphoreByIds.containsKey(message.getId())) {
                             System.out.println(this.clientId + " - Middleware took so much time to answer");
+                            Simulator.this.executor.submit(Simulator.this::stop);
+                            break;
                         }
                     }
                 } catch (InterruptedException ignored) {
@@ -142,7 +141,7 @@ class Simulator {
     }
 
     private void publishToSend(MessageDTO messageDTO) {
-        this.toPublish.add(messageDTO);
+        this.toSend.add(messageDTO);
     }
 
     private String generateText() {
@@ -194,7 +193,12 @@ class Simulator {
 
                 String answerId = dto.getAnswerId();
                 if (answerId != null) {
-                    System.out.println(Simulator.this.clientId + " - Received OK for message " + answerId);
+                    Object status = dto.getData().get("status");
+                    if (Objects.equals("OK", status)) {
+                        System.out.println(Simulator.this.clientId + " - Received OK for message " + answerId);
+                    } else {
+                        System.out.println(Simulator.this.clientId + " - Received " + status + " for message " + answerId + ": " + dto.getData().get("message"));
+                    }
                     Semaphore semaphore = Simulator.this.semaphoreByIds.remove(answerId);
                     if (semaphore != null) {
                         semaphore.release();
