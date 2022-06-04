@@ -1,0 +1,12 @@
+{
+    "clients": 2,
+    "rate": {
+        "unit": "MINUTES",
+        "value": 6
+    }
+}
+
+{
+    "clients": 0,
+    "rate": null
+}

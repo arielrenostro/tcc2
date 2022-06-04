@@ -96,7 +96,7 @@ public class ServiceService extends BaseService<Service, ServiceRepository> {
                 sendPendingMessages(serviceId);
                 break;
             case CONFIRM_MESSAGE:
-                confirmMessage(serviceId, notification.getAnswerId());
+                confirmMessage(notification.getAnswerId());
                 break;
             case SEND_MESSAGE:
                 sendMessageToClient(serviceId, notification);
@@ -125,8 +125,7 @@ public class ServiceService extends BaseService<Service, ServiceRepository> {
         }
     }
 
-    private void confirmMessage(String serviceId, String answerId) throws MiddlewareException {
-        this.logger.info("Confirming message " + answerId + " from service " + serviceId);
+    private void confirmMessage(String answerId) throws MiddlewareException {
         this.messageService.confirmMessage(answerId);
     }
 

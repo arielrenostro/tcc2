@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Delivery;
 
 import java.io.IOException;
-import java.sql.Time;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
@@ -54,11 +53,6 @@ public class Main {
             }
         }, 5, 60, TimeUnit.SECONDS);
         Runtime.getRuntime().addShutdownHook(new Thread(scheduled::shutdownNow));
-    }
-
-    public static void main(String[] args) throws IOException, InterruptedException, TimeoutException {
-        System.out.println("Starting Chat Service");
-        new Main();
     }
 
     private void handle(Delivery message) {
@@ -108,5 +102,10 @@ public class Main {
     private void sendToMiddleware(ServiceNotificationDTO obj) throws IOException, InterruptedException, TimeoutException {
         byte[] bytes = this.mapper.writeValueAsBytes(obj);
         this.broker.publishExchange(Config.RABBITMQ_MIDDLEWARE_NOTIFICATION_EXCHANGE, "", Map.of("serviceId", Config.SERVICE_ID), bytes);
+    }
+
+    public static void main(String[] args) throws IOException, InterruptedException, TimeoutException {
+        System.out.println("Starting Chat Service");
+        new Main();
     }
 }
