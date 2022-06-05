@@ -35,9 +35,6 @@ public class MessageService {
     }
 
     public Message persistNewClientMessage(String clientId, ObjectId serviceId, MessageDTO messageDTO) throws MiddlewareException {
-        if (this.repository.findByMessageId(messageDTO.getId()) != null) {
-            throw new MiddlewareException("Message already exists with id \"" + messageDTO.getId() + "\"");
-        }
         Message message = createMessage(messageDTO);
 
         message.setOrigin(new Destination());
@@ -88,19 +85,13 @@ public class MessageService {
     }
 
     public void confirmMessage(String messageId) throws MiddlewareException {
-        Message message = this.repository.findByMessageId(messageId);
-        if (message == null) {
+        long updated = this.repository.confirmMessageById(messageId);
+        if (updated == 0) {
             throw new MiddlewareException("Message " + messageId + " not found");
         }
+    }
 
-        if (Objects.equals(MessageStatus.DELIVERED, message.getStatus())) {
-            this.logger.info("Message " + messageId + " is already confirmed");
-            return;
-        }
-
-        this.logger.info("Confirming message " + messageId);
-        message.setStatus(MessageStatus.DELIVERED);
-        message.setDeliveredAt(new Date());
-        this.repository.update(message);
+    public void buildCollection() {
+        this.repository.buildCollection();
     }
 }

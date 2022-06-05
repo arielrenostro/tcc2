@@ -11,6 +11,9 @@ public class Config {
 
     public static final String WEBSOCKET_URL = System.getenv("WEBSOCKET_URL");
 
+    public static final String INFLUXDB_CONNECTION_STRING = System.getenv("INFLUXDB_CONNECTION_STRING");
+    public static final String INFLUXDB_DATABASE = System.getenv("INFLUXDB_DATABASE");
+
     public static final int RABBITMQ_PUBLISH_TIMEOUT = 5000;
     public static final String RABBITMQ_BROADCAST_EXCHANGE = "client-chat.broadcast";
     public static final int MAX_MESSAGE_SIZE = 1024;

@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class ClientSimulatorService {
 
@@ -30,18 +33,32 @@ public class ClientSimulatorService {
         if (this.running) {
             this.stop();
         }
-        for (int i = 0; i < clients; i++) {
-            String uuid = null;
-            while (uuid == null || this.clientIds.contains(uuid)) {
-                uuid = UUID.randomUUID().toString();
+
+        ExecutorService executors = Executors.newFixedThreadPool(clients);
+        try {
+            for (int i = 0; i < clients; i++) {
+                String uuid = null;
+                while (uuid == null || this.clientIds.contains(uuid)) {
+                    uuid = UUID.randomUUID().toString();
+                }
+
+                Simulator simulator = new Simulator(uuid, millisBetweenMessages);
+                this.tasks.add(simulator);
+
+                executors.submit(() -> {
+                    try {
+                        simulator.start();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
             }
-
-            Simulator simulator = new Simulator(uuid, millisBetweenMessages);
-            simulator.start();
-
-            this.tasks.add(simulator);
+            this.running = true;
+        } finally {
+            executors.shutdown();
+            executors.awaitTermination(2, TimeUnit.SECONDS);
+            executors.shutdownNow();
         }
-        this.running = true;
     }
 
     public synchronized void stop() {

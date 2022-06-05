@@ -45,13 +45,38 @@ public class Broker {
         }
     }
 
+    public void createQueue(String queueName, boolean durable) throws IOException, InterruptedException, TimeoutException {
+        Channel channel = getPublishChannel();
+        try {
+            channel.queueDeclare(queueName, durable, false, false, null);
+        } finally {
+            releasePublishChannel(channel);
+        }
+    }
+
     public void consumeExchange(String exchangeName, String routingKey, String queueName, Consumer.Handler handler) throws IOException, TimeoutException {
         Channel channel = getConnection().createChannel();
         channel.queueDeclare(queueName, false, true, true, null);
         channel.queueBind(queueName, exchangeName, routingKey);
 
-        channel.basicQos(1);
+        channel.basicQos(4);
         channel.basicConsume(queueName, false, new Consumer(handler, channel), (consumerTag) -> {});
+    }
+
+    public void consumeQueue(String queueName, Consumer.Handler handler) throws IOException, TimeoutException {
+        Channel channel = getConnection().createChannel();
+
+        channel.basicQos(4);
+        channel.basicConsume(queueName, false, new Consumer(handler, channel), (consumerTag) -> {});
+    }
+
+    public void queueBind(String exchangeName, String routeKey, String queueName) throws IOException, InterruptedException, TimeoutException {
+        Channel channel = getPublishChannel();
+        try {
+            channel.queueBind(queueName, exchangeName, routeKey);
+        } finally {
+            releasePublishChannel(channel);
+        }
     }
 
     public void publishExchange(String exchangeName, String routingKey, Map<String, Object> headers, byte[] data) throws IOException, InterruptedException, TimeoutException {

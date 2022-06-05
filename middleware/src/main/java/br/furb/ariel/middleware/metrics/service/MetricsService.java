@@ -1,7 +1,6 @@
 package br.furb.ariel.middleware.metrics.service;
 
 import br.furb.ariel.middleware.metrics.model.Metric;
-import br.furb.ariel.middleware.metrics.model.NewConnectionMetric;
 import br.furb.ariel.middleware.metrics.repository.MetricsRepository;
 import org.jboss.logging.Logger;
 
@@ -24,7 +23,7 @@ public class MetricsService {
     Logger logger;
 
     public MetricsService() {
-        this.executor = Executors.newFixedThreadPool(2, new NamedThreadFactory("metrics-"));
+        this.executor = Executors.newFixedThreadPool(4, new NamedThreadFactory("metrics-"));
     }
 
     public void publish(Metric metric) {

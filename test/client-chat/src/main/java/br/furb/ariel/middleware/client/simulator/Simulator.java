@@ -2,6 +2,10 @@ package br.furb.ariel.middleware.client.simulator;
 
 import br.furb.ariel.middleware.client.config.Config;
 import br.furb.ariel.middleware.client.dto.MessageDTO;
+import br.furb.ariel.middleware.client.metrics.MessageReceivedMetric;
+import br.furb.ariel.middleware.client.metrics.MetricsService;
+import br.furb.ariel.middleware.client.metrics.MiddlewareTimeoutMetric;
+import br.furb.ariel.middleware.client.utils.NamedThreadFactory;
 import br.furb.ariel.middleware.client.utils.RandomUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -35,7 +39,7 @@ class Simulator {
     public final long millisBetweenMessages;
 
     private final ScheduledExecutorService executor;
-    private final Map<String, Semaphore> semaphoreByIds = new ConcurrentHashMap<>();
+    private final Map<String, SentMessage> semaphoreByIds = new ConcurrentHashMap<>();
     private final Random random = new Random();
     private final BlockingQueue<MessageDTO> toSend = new ArrayBlockingQueue<>(1000);
 
@@ -95,6 +99,7 @@ class Simulator {
                         .newWebSocketBuilder() //
                         .buildAsync(new URI(Config.WEBSOCKET_URL + "?id=" + this.clientId), new Listener()) //
                         .join();
+                Thread.sleep(100);
             } catch (Exception e) {
                 atomicException.set(e);
             }
@@ -118,14 +123,15 @@ class Simulator {
                     if (message != null) {
                         System.out.println(this.clientId + " - Sending a new Message " + message.getId());
 
-                        Semaphore semaphore = new Semaphore(0);
-                        this.semaphoreByIds.put(message.getId(), semaphore);
+                        SentMessage sentMessage = new SentMessage(new Semaphore(0));
+                        this.semaphoreByIds.put(message.getId(), sentMessage);
 
                         this.ws.sendText(new ObjectMapper().writeValueAsString(message), true);
 
-                        semaphore.tryAcquire(2, TimeUnit.SECONDS);
+                        sentMessage.getSemaphore().tryAcquire(2, TimeUnit.SECONDS);
 
                         if (this.semaphoreByIds.containsKey(message.getId())) {
+                            MetricsService.getInstance().publish(new MiddlewareTimeoutMetric());
                             System.out.println(this.clientId + " - Middleware took so much time to answer");
                             Simulator.this.executor.submit(Simulator.this::stop);
                             break;
@@ -194,14 +200,17 @@ class Simulator {
                 String answerId = dto.getAnswerId();
                 if (answerId != null) {
                     Object status = dto.getData().get("status");
-                    if (Objects.equals("OK", status)) {
+                    boolean ok = Objects.equals("OK", status);
+                    if (ok) {
                         System.out.println(Simulator.this.clientId + " - Received OK for message " + answerId);
                     } else {
                         System.out.println(Simulator.this.clientId + " - Received " + status + " for message " + answerId + ": " + dto.getData().get("message"));
                     }
-                    Semaphore semaphore = Simulator.this.semaphoreByIds.remove(answerId);
-                    if (semaphore != null) {
-                        semaphore.release();
+                    SentMessage sentMessage = Simulator.this.semaphoreByIds.remove(answerId);
+                    if (sentMessage != null) {
+                        sentMessage.getSemaphore().release();
+                        long ellapsed = System.nanoTime() - sentMessage.getTime();
+                        MetricsService.getInstance().publish(new MessageReceivedMetric(ok, ellapsed));
                     }
                 } else {
                     String id = dto.getId();
@@ -215,28 +224,22 @@ class Simulator {
         }
     }
 
-    private static class NamedThreadFactory implements ThreadFactory {
+    private static class SentMessage {
 
-        private final AtomicInteger threadNumber = new AtomicInteger(0);
-        private final ThreadGroup group;
-        private final String threadPrefix;
+        private final Semaphore semaphore;
+        private final long time;
 
-        public NamedThreadFactory(String threadPrefix) {
-            SecurityManager s = System.getSecurityManager();
-            this.group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
-            this.threadPrefix = threadPrefix;
+        public SentMessage(Semaphore semaphore) {
+            this.semaphore = semaphore;
+            this.time = System.nanoTime();
         }
 
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread t = new Thread(group, r, threadPrefix + threadNumber.incrementAndGet(), 0);
-            if (t.isDaemon()) {
-                t.setDaemon(false);
-            }
-            if (t.getPriority() != Thread.NORM_PRIORITY) {
-                t.setPriority(Thread.NORM_PRIORITY);
-            }
-            return t;
+        public Semaphore getSemaphore() {
+            return semaphore;
+        }
+
+        public long getTime() {
+            return time;
         }
     }
 }

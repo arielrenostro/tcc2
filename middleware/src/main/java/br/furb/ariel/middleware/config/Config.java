@@ -42,6 +42,9 @@ public class Config {
     @ConfigProperty(name = "CONSUMERS_TO_SEND")
     int consumersToSend;
 
+    @ConfigProperty(name = "CONSUMERS_NOTIFICATION")
+    int consumersNotification;
+
     @ConfigProperty(name = "INFLUXDB_CONNECTION_STRING")
     String influxDBConnectionString;
 
@@ -82,6 +85,10 @@ public class Config {
 
     public int getConsumersToSend() {
         return consumersToSend;
+    }
+
+    public int getConsumersNotification() {
+        return consumersNotification;
     }
 
     public String getInfluxDBConnectionString() {

@@ -1,8 +1,8 @@
 {
-    "clients": 2,
+    "clients": 20,
     "rate": {
         "unit": "MINUTES",
-        "value": 6
+        "value": 120
     }
 }
 
