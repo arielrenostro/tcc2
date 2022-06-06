@@ -25,3 +25,7 @@ variable "cache_read_host" {
 variable "mongodb_host" {
   type = string
 }
+
+variable "influxdb_host" {
+  type = string
+}

@@ -23,7 +23,9 @@ resource "aws_instance" "influxdb" {
 
   user_data = <<-EEOOFF
     #!/bin/bash
-
+    wget https://dl.influxdata.com/influxdb/releases/influxdb-1.8.10.aarch64.rpm
+    yum install ./influxdb-1.8.10.aarch64.rpm
+    service influxdb start
   EEOOFF
 
   tags = {

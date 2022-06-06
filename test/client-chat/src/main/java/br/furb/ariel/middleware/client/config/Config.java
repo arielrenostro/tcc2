@@ -13,6 +13,7 @@ public class Config {
 
     public static final String INFLUXDB_CONNECTION_STRING = System.getenv("INFLUXDB_CONNECTION_STRING");
     public static final String INFLUXDB_DATABASE = System.getenv("INFLUXDB_DATABASE");
+    public static final boolean DEBUG = getBoolean("DEBUG", false);
 
     public static final int RABBITMQ_PUBLISH_TIMEOUT = 5000;
     public static final String RABBITMQ_BROADCAST_EXCHANGE = "client-chat.broadcast";

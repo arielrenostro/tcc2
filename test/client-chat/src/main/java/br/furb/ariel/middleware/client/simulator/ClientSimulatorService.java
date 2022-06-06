@@ -34,31 +34,17 @@ public class ClientSimulatorService {
             this.stop();
         }
 
-        ExecutorService executors = Executors.newFixedThreadPool(clients);
-        try {
-            for (int i = 0; i < clients; i++) {
-                String uuid = null;
-                while (uuid == null || this.clientIds.contains(uuid)) {
-                    uuid = UUID.randomUUID().toString();
-                }
-
-                Simulator simulator = new Simulator(uuid, millisBetweenMessages);
-                this.tasks.add(simulator);
-
-                executors.submit(() -> {
-                    try {
-                        simulator.start();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
+        for (int i = 0; i < clients; i++) {
+            String uuid = null;
+            while (uuid == null || this.clientIds.contains(uuid)) {
+                uuid = UUID.randomUUID().toString();
             }
-            this.running = true;
-        } finally {
-            executors.shutdown();
-            executors.awaitTermination(2, TimeUnit.SECONDS);
-            executors.shutdownNow();
+
+            Simulator simulator = new Simulator(uuid, millisBetweenMessages);
+            simulator.start();
+            this.tasks.add(simulator);
         }
+        this.running = true;
     }
 
     public synchronized void stop() {

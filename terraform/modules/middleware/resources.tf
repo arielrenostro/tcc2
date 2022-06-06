@@ -54,12 +54,20 @@ resource "aws_ecs_task_definition" "middleware" {
           value = "10"
         },
         {
+          name = "CONSUMERS_NOTIFICATION"
+          value = "4"
+        },
+        {
           name  = "CACHE_CLIENT_REGISTER_TIMEOUT"
           value = "30000"
         },
         {
           name  = "QUARKUS_MONGODB_DATABASE"
           value = "middleware"
+        },
+        {
+          name  = "INFLUXDB_DATABASE"
+          value = "metrics"
         },
       ]
 
@@ -83,7 +91,11 @@ resource "aws_ecs_task_definition" "middleware" {
         {
           name      = "QUARKUS_MONGODB_CONNECTION_STRING"
           valueFrom = "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/middleware/${var.env}/DB_CONNECTION_STRING"
-        }
+        },
+        {
+          name      = "INFLUXDB_CONNECTION_STRING"
+          valueFrom = "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/middleware/${var.env}/INFLUXDB_CONNECTION_STRING"
+        },
       ]
 
       logConfiguration = {

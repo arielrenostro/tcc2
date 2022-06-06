@@ -1,8 +1,16 @@
 {
     "clients": 20,
     "rate": {
+        "unit": "SECONDS",
+        "value": 1
+    }
+}
+
+{
+    "clients": 2,
+    "rate": {
         "unit": "MINUTES",
-        "value": 120
+        "value": 1
     }
 }
 

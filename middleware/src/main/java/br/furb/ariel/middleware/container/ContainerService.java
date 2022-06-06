@@ -65,11 +65,11 @@ public class ContainerService {
 
     private void consumeNotification() throws IOException, InterruptedException, TimeoutException {
         this.broker.createRoutedExchange(Config.RABBITMQ_EXCHANGE_NOTIFICATION, true);
+        this.broker.createQueue(Config.RABBITMQ_EXCHANGE_NOTIFICATION, true);
         this.broker.queueBind(Config.RABBITMQ_EXCHANGE_NOTIFICATION, "", Config.RABBITMQ_EXCHANGE_NOTIFICATION);
         //        String queueName = Config.RABBITMQ_EXCHANGE_NOTIFICATION + "." + this.id;
         //        this.broker.consumeExchange(Config.RABBITMQ_EXCHANGE_NOTIFICATION, "", queueName, this.serviceService.newConsumer());
 
-        this.broker.createQueue(Config.RABBITMQ_EXCHANGE_NOTIFICATION, true);
         for (int i = 0; i < this.config.getConsumersNotification(); i++) {
             this.logger.info("Consuming queue " + Config.RABBITMQ_EXCHANGE_NOTIFICATION + " " + i);
             this.broker.consumeQueue(Config.RABBITMQ_EXCHANGE_NOTIFICATION, this.serviceService.newConsumer());

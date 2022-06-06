@@ -33,3 +33,9 @@ resource "aws_ssm_parameter" "mongo_host" {
   type  = "String"
   value = "mongodb://${var.mongodb_host}:27017"
 }
+
+resource "aws_ssm_parameter" "influxdb_host" {
+  name  = "/middleware/${var.env}/INFLUXDB_CONNECTION_STRING"
+  type  = "String"
+  value = "http://${var.influxdb_host}:8086"
+}

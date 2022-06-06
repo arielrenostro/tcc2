@@ -73,7 +73,9 @@ class Simulator {
 
     private void startScheduler() {
         this.executor.scheduleWithFixedDelay(() -> {
-            System.out.println(this.clientId + " - publishing a new message");
+            if (Config.DEBUG) {
+                System.out.println(this.clientId + " - publishing a new message");
+            }
 
             String destination = ClientSimulatorService.getInstance().peekClient(this.clientId);
             String text = generateText();
@@ -121,7 +123,9 @@ class Simulator {
                     }
                     MessageDTO message = this.toSend.poll(99999, TimeUnit.DAYS);
                     if (message != null) {
-                        System.out.println(this.clientId + " - Sending a new Message " + message.getId());
+                        if (Config.DEBUG) {
+                            System.out.println(this.clientId + " - Sending a new Message " + message.getId());
+                        }
 
                         SentMessage sentMessage = new SentMessage(new Semaphore(0));
                         this.semaphoreByIds.put(message.getId(), sentMessage);
@@ -202,7 +206,9 @@ class Simulator {
                     Object status = dto.getData().get("status");
                     boolean ok = Objects.equals("OK", status);
                     if (ok) {
-                        System.out.println(Simulator.this.clientId + " - Received OK for message " + answerId);
+                        if (Config.DEBUG) {
+                            System.out.println(Simulator.this.clientId + " - Received OK for message " + answerId);
+                        }
                     } else {
                         System.out.println(Simulator.this.clientId + " - Received " + status + " for message " + answerId + ": " + dto.getData().get("message"));
                     }
@@ -215,7 +221,9 @@ class Simulator {
                 } else {
                     String id = dto.getId();
                     MessageDTO answer = MessageDTO.ok(id).build();
-                    System.out.println(Simulator.this.clientId + " - Confirming message " + id + " from " + dto.getData().get("from") + " with " + answer.getId());
+                    if (Config.DEBUG) {
+                        System.out.println(Simulator.this.clientId + " - Confirming message " + id + " from " + dto.getData().get("from") + " with " + answer.getId());
+                    }
                     Simulator.this.publishToSend(answer);
                 }
             } catch (Exception e) {
