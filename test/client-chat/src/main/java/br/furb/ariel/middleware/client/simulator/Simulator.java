@@ -2,6 +2,8 @@ package br.furb.ariel.middleware.client.simulator;
 
 import br.furb.ariel.middleware.client.config.Config;
 import br.furb.ariel.middleware.client.dto.MessageDTO;
+import br.furb.ariel.middleware.client.metrics.ConnectionMetric;
+import br.furb.ariel.middleware.client.metrics.DisconnectionMetric;
 import br.furb.ariel.middleware.client.metrics.MessageReceivedMetric;
 import br.furb.ariel.middleware.client.metrics.MetricsService;
 import br.furb.ariel.middleware.client.metrics.MiddlewareTimeoutMetric;
@@ -49,7 +51,7 @@ class Simulator {
     Simulator(String clientId, long millisBetweenMessages) {
         this.clientId = clientId;
         this.millisBetweenMessages = millisBetweenMessages;
-        this.executor = Executors.newScheduledThreadPool(3, new NamedThreadFactory("simulator-" + this.clientId + "-"));
+        this.executor = Executors.newScheduledThreadPool(10, new NamedThreadFactory("simulator-" + this.clientId + "-"));
     }
 
     public void stop() {
@@ -101,7 +103,7 @@ class Simulator {
                         .newWebSocketBuilder() //
                         .buildAsync(new URI(Config.WEBSOCKET_URL + "?id=" + this.clientId), new Listener()) //
                         .join();
-                Thread.sleep(100);
+                Thread.sleep(Config.WEBSOCKET_AFTER_CONNECTION_DELAY);
             } catch (Exception e) {
                 atomicException.set(e);
             }
@@ -111,43 +113,53 @@ class Simulator {
         if (atomicException.get() != null) {
             throw atomicException.get();
         }
+        MetricsService.getInstance().publish(new ConnectionMetric());
     }
 
     private void startSender() {
-        this.executor.submit(() -> {
-            while (!this.stoped) {
-                try {
-                    if (this.ws.isOutputClosed()) {
-                        Simulator.this.executor.submit(Simulator.this::stop);
-                        break;
-                    }
-                    MessageDTO message = this.toSend.poll(99999, TimeUnit.DAYS);
-                    if (message != null) {
-                        if (Config.DEBUG) {
-                            System.out.println(this.clientId + " - Sending a new Message " + message.getId());
-                        }
-
-                        SentMessage sentMessage = new SentMessage(new Semaphore(0));
-                        this.semaphoreByIds.put(message.getId(), sentMessage);
-
-                        this.ws.sendText(new ObjectMapper().writeValueAsString(message), true);
-
-                        sentMessage.getSemaphore().tryAcquire(2, TimeUnit.SECONDS);
-
-                        if (this.semaphoreByIds.containsKey(message.getId())) {
-                            MetricsService.getInstance().publish(new MiddlewareTimeoutMetric());
-                            System.out.println(this.clientId + " - Middleware took so much time to answer");
+        for (int x = 0; x < Config.SENDER_COUNT; x++) {
+            this.executor.submit(() -> {
+                while (!this.stoped) {
+                    try {
+                        if (this.ws.isOutputClosed()) {
                             Simulator.this.executor.submit(Simulator.this::stop);
                             break;
                         }
+                        MessageDTO message = this.toSend.poll(99999, TimeUnit.DAYS);
+                        if (message != null) {
+                            if (Config.DEBUG) {
+                                System.out.println(this.clientId + " - Sending a new Message " + message.getId());
+                            }
+
+                            SentMessage sentMessage = new SentMessage(new Semaphore(0));
+                            this.semaphoreByIds.put(message.getId(), sentMessage);
+
+                            this.ws.sendText(new ObjectMapper().writeValueAsString(message), true);
+
+                            int i;
+                            for (i = 0; i < Config.WEBSOCKET_RECEIVE_MESSAGE_RETRY; i++) {
+                                sentMessage.getSemaphore().tryAcquire(Config.WEBSOCKET_RECEIVE_MESSAGE_TIMEOUT, TimeUnit.SECONDS);
+                                if (!this.semaphoreByIds.containsKey(message.getId())) {
+                                    break;
+                                }
+                                MetricsService.getInstance().publish(new MiddlewareTimeoutMetric());
+                                System.out.println(this.clientId + " - Middleware took so much time to answer");
+                            }
+                            if (i == Config.WEBSOCKET_RECEIVE_MESSAGE_RETRY) {
+                                MetricsService.getInstance().publish(new DisconnectionMetric());
+                                System.out.println(this.clientId + " - Middleware didn't answer after 3 retries");
+                                Simulator.this.executor.submit(Simulator.this::stop);
+                                break;
+                            }
+                        }
+                    } catch (InterruptedException ignored) {
+                        break;
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                } catch (InterruptedException ignored) {
-                    break;
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
-            }
-        });
+            });
+        }
     }
 
     private void publishToSend(MessageDTO messageDTO) {

@@ -4,8 +4,11 @@ RUN mkdir /app
 WORKDIR /app
 
 COPY pom.xml pom.xml
+
+RUN mvn clean install -T=12
+
 COPY src src
 
-RUN mvn clean install -T=4
+RUN mvn clean install -T=12
 
 ENTRYPOINT ["java", "-jar", "/app/target/chat-1.0-SNAPSHOT-jar-with-dependencies.jar"]
