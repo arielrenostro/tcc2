@@ -7,9 +7,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 public class ClientSimulatorService {
 
@@ -39,9 +36,11 @@ public class ClientSimulatorService {
             while (uuid == null || this.clientIds.contains(uuid)) {
                 uuid = UUID.randomUUID().toString();
             }
+            this.clientIds.add(uuid);
 
             Simulator simulator = new Simulator(uuid, millisBetweenMessages);
             simulator.start();
+
             this.tasks.add(simulator);
         }
         this.running = true;
@@ -54,12 +53,6 @@ public class ClientSimulatorService {
         this.tasks.clear();
         this.clientIds.clear();
         this.running = false;
-    }
-
-    public void registerClientId(String clientId) {
-        synchronized (this.clientIds) {
-            this.clientIds.add(clientId);
-        }
     }
 
     public String peekClient(String clientId) {

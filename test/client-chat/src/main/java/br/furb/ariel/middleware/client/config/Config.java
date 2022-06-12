@@ -21,9 +21,8 @@ public class Config {
     public static final int MIN_MESSAGE_SIZE = 6;
 
     public static final int WEBSOCKET_RECEIVE_MESSAGE_TIMEOUT = 5;
-    public static final int WEBSOCKET_RECEIVE_MESSAGE_RETRY = 3;
+    public static final int WEBSOCKET_RECEIVE_MESSAGE_RETRY = 10;
     public static final int WEBSOCKET_AFTER_CONNECTION_DELAY = 250;
-    public static final int SENDER_COUNT = 2;
 
     private static boolean getBoolean(String env, boolean def) {
         String value = System.getenv(env);

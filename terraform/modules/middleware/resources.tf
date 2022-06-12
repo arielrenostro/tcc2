@@ -55,7 +55,15 @@ resource "aws_ecs_task_definition" "middleware" {
         },
         {
           name = "CONSUMERS_NOTIFICATION"
-          value = "4"
+          value = "8"
+        },
+        {
+          name = "QUARKUS_REDIS_MAX_POOL_WAITING",
+          value = "100"
+        },
+        {
+          name = "QUARKUS_REDIS_MAX_POOL_SIZE",
+          value = "24"
         },
         {
           name  = "CACHE_CLIENT_REGISTER_TIMEOUT"

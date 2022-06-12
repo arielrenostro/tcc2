@@ -11,7 +11,9 @@ public class Config {
 
     public static final String SERVICE_ID = System.getenv("SERVICE_ID");
 
-    public static final int RABBITMQ_CONSUMERS = 5;
+    public static final boolean DEBUG = getBoolean("DEBUG", false);
+
+    public static final int RABBITMQ_CONSUMERS = 10;
     public static final int RABBITMQ_PUBLISH_TIMEOUT = 5000;
     public static final String RABBITMQ_INPUT_QUEUE = "chat-service.input";
     public static final String RABBITMQ_MIDDLEWARE_NOTIFICATION_EXCHANGE = "middleware.notification";

@@ -93,7 +93,11 @@ public class WebsocketService {
         this.metricsService.publish(new ReceivedWebSocketMessageMetric(message.length()));
 
         WebsocketSession websocketSession = getWebsocketSession(event.getId());
-        this.clientService.updateRegistration(websocketSession);
+        try {
+            this.clientService.updateRegistration(websocketSession);
+        } catch (Exception e) {
+            this.logger.error("Failure to update client registration: " + e.getMessage());
+        }
 
         MessageDTO messageDTO = null;
         try {
@@ -177,6 +181,10 @@ public class WebsocketService {
         this.metricsService.publish(new SendWebSocketMessageMetric(message.length()));
 
         Session session = websocketSession.getSession();
+        if (!session.isOpen()) {
+            this.logger.error("Trying to send a message to a closed websocket session. ClientId: " + websocketSession.getClientId());
+            return;
+        }
         session.getBasicRemote().sendText(message);
     }
 

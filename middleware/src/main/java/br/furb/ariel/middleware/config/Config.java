@@ -11,6 +11,7 @@ public class Config {
     public static final String RABBITMQ_EXCHANGE_TO_SEND = "middleware.to-send";
     public static final String RABBITMQ_EXCHANGE_NOTIFICATION = "middleware.notification";
 
+    public static final Duration CACHE_CLIENT_REGISTER_DELAY = Duration.ofSeconds(5);
     public static final Duration CACHE_CLIENT_REGISTER_TIMEOUT = Duration.ofSeconds(30);
 
     public static final Duration WEBSOCKET_PING_TIMEOUT = Duration.ofSeconds(5);

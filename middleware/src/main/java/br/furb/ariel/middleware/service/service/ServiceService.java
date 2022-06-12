@@ -125,7 +125,7 @@ public class ServiceService extends BaseService<Service, ServiceRepository> {
         }
     }
 
-    private void confirmMessage(String answerId) throws MiddlewareException {
+    private void confirmMessage(String answerId) throws MiddlewareException, InterruptedException {
         this.messageService.confirmMessage(answerId);
     }
 
@@ -183,7 +183,7 @@ public class ServiceService extends BaseService<Service, ServiceRepository> {
         send(service, message);
     }
 
-    private void processMiddlewareMessage(MessageDTO messageDTO) throws MiddlewareException {
+    private void processMiddlewareMessage(MessageDTO messageDTO) throws MiddlewareException, InterruptedException {
         ToMiddlewareMessageDTO toMiddleware = this.mapper.convertValue(messageDTO.getData(), ToMiddlewareMessageDTO.class);
         switch (toMiddleware.getType()) {
         case CONFIRM_MESSAGE:

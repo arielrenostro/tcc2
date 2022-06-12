@@ -1,6 +1,7 @@
 package br.furb.ariel.middleware.client;
 
 import br.furb.ariel.middleware.broker.Broker;
+import br.furb.ariel.middleware.config.Config;
 import br.furb.ariel.middleware.message.dto.MessageDTO;
 import br.furb.ariel.middleware.message.model.Destination;
 import br.furb.ariel.middleware.message.model.DestinationType;
@@ -14,6 +15,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.websocket.Session;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.TemporalField;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -60,8 +64,17 @@ public class ClientService {
     }
 
     public void updateRegistration(WebsocketSession websocketSession) {
+        Instant lastUpdate = websocketSession.getLastUpdate();
+        if (lastUpdate != null) {
+            Duration between = Duration.between(lastUpdate, Instant.now());
+            if (between.compareTo(Config.CACHE_CLIENT_REGISTER_DELAY) < 0) {
+                return;
+            }
+        }
+
         String clientId = websocketSession.getClientId();
         this.clientCacheService.register(clientId);
+        websocketSession.setLastUpdate(Instant.now());
     }
 
     public void sendPendingMessages(String containerId, String clientId) throws IOException, InterruptedException, TimeoutException {

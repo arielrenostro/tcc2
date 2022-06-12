@@ -13,5 +13,6 @@ public class WebsocketSession {
 
     private Instant lastPing;
     private Instant lastPong;
+    private Instant lastUpdate;
 
 }

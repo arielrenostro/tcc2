@@ -7,8 +7,11 @@ import br.furb.ariel.middleware.client.metrics.DisconnectionMetric;
 import br.furb.ariel.middleware.client.metrics.MessageReceivedMetric;
 import br.furb.ariel.middleware.client.metrics.MetricsService;
 import br.furb.ariel.middleware.client.metrics.MiddlewareTimeoutMetric;
+import br.furb.ariel.middleware.client.metrics.RateController;
+import br.furb.ariel.middleware.client.metrics.RateMetric;
 import br.furb.ariel.middleware.client.utils.NamedThreadFactory;
 import br.furb.ariel.middleware.client.utils.RandomUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.net.URI;
@@ -30,20 +33,19 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 class Simulator {
 
-    public final String clientId;
-    public final long millisBetweenMessages;
+    private final String clientId;
+    private final long millisBetweenMessages;
 
     private final ScheduledExecutorService executor;
     private final Map<String, SentMessage> semaphoreByIds = new ConcurrentHashMap<>();
     private final Random random = new Random();
     private final BlockingQueue<MessageDTO> toSend = new ArrayBlockingQueue<>(1000);
+    private final RateController rateController = new RateController();
 
     private WebSocket ws;
     private boolean stoped;
@@ -51,7 +53,7 @@ class Simulator {
     Simulator(String clientId, long millisBetweenMessages) {
         this.clientId = clientId;
         this.millisBetweenMessages = millisBetweenMessages;
-        this.executor = Executors.newScheduledThreadPool(10, new NamedThreadFactory("simulator-" + this.clientId + "-"));
+        this.executor = Executors.newScheduledThreadPool(20, new NamedThreadFactory("simulator-" + this.clientId + "-"));
     }
 
     public void stop() {
@@ -67,17 +69,18 @@ class Simulator {
         System.out.println(this.clientId + " - Starting");
 
         startListener();
-        ClientSimulatorService.getInstance().registerClientId(this.clientId);
-
         startSender();
         startScheduler();
+        startRate();
+    }
+
+    private void startRate() {
+        this.executor.scheduleWithFixedDelay(this.rateController::generateRate, 0, 10, TimeUnit.SECONDS);
     }
 
     private void startScheduler() {
         this.executor.scheduleWithFixedDelay(() -> {
-            if (Config.DEBUG) {
-                System.out.println(this.clientId + " - publishing a new message");
-            }
+            logDebug(this.clientId + " - publishing a new message");
 
             String destination = ClientSimulatorService.getInstance().peekClient(this.clientId);
             String text = generateText();
@@ -91,7 +94,7 @@ class Simulator {
                     "message", text //
             ));
             publishToSend(message);
-        }, 0, this.millisBetweenMessages, TimeUnit.MILLISECONDS);
+        }, this.millisBetweenMessages, this.millisBetweenMessages, TimeUnit.MILLISECONDS);
     }
 
     private void startListener() throws Exception {
@@ -117,53 +120,98 @@ class Simulator {
     }
 
     private void startSender() {
-        for (int x = 0; x < Config.SENDER_COUNT; x++) {
-            this.executor.submit(() -> {
-                while (!this.stoped) {
-                    try {
-                        if (this.ws.isOutputClosed()) {
-                            Simulator.this.executor.submit(Simulator.this::stop);
-                            break;
-                        }
-                        MessageDTO message = this.toSend.poll(99999, TimeUnit.DAYS);
-                        if (message != null) {
-                            if (Config.DEBUG) {
-                                System.out.println(this.clientId + " - Sending a new Message " + message.getId());
-                            }
-
-                            SentMessage sentMessage = new SentMessage(new Semaphore(0));
-                            this.semaphoreByIds.put(message.getId(), sentMessage);
-
-                            this.ws.sendText(new ObjectMapper().writeValueAsString(message), true);
-
-                            int i;
-                            for (i = 0; i < Config.WEBSOCKET_RECEIVE_MESSAGE_RETRY; i++) {
-                                sentMessage.getSemaphore().tryAcquire(Config.WEBSOCKET_RECEIVE_MESSAGE_TIMEOUT, TimeUnit.SECONDS);
-                                if (!this.semaphoreByIds.containsKey(message.getId())) {
-                                    break;
-                                }
-                                MetricsService.getInstance().publish(new MiddlewareTimeoutMetric());
-                                System.out.println(this.clientId + " - Middleware took so much time to answer");
-                            }
-                            if (i == Config.WEBSOCKET_RECEIVE_MESSAGE_RETRY) {
-                                MetricsService.getInstance().publish(new DisconnectionMetric());
-                                System.out.println(this.clientId + " - Middleware didn't answer after 3 retries");
-                                Simulator.this.executor.submit(Simulator.this::stop);
-                                break;
-                            }
-                        }
-                    } catch (InterruptedException ignored) {
-                        break;
-                    } catch (Exception e) {
-                        e.printStackTrace();
+        this.executor.submit(() -> {
+            while (!this.stoped) {
+                try {
+                    if (this.ws.isOutputClosed()) {
+                        this.executor.submit(Simulator.this::stop);
+                        return;
                     }
+
+                    MessageDTO message = this.toSend.poll(99999, TimeUnit.DAYS);
+                    if (message != null) {
+                        send(message);
+                    }
+                } catch (InterruptedException ignored) {
+                    break;
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-            });
+            }
+        });
+    }
+
+    private void send(MessageDTO message) throws JsonProcessingException, InterruptedException {
+        logDebug(this.clientId + " - Sending a new Message " + message.getId());
+
+        SentMessage sentMessage = new SentMessage(new Semaphore(0));
+        this.semaphoreByIds.put(message.getId(), sentMessage);
+
+        this.ws.sendText(new ObjectMapper().writeValueAsString(message), true);
+
+        int i;
+        for (i = 0; i < Config.WEBSOCKET_RECEIVE_MESSAGE_RETRY; i++) {
+            sentMessage.getSemaphore().tryAcquire(Config.WEBSOCKET_RECEIVE_MESSAGE_TIMEOUT, TimeUnit.SECONDS);
+            if (!this.semaphoreByIds.containsKey(message.getId())) {
+                if (message.getAnswerId() == null) {
+                    this.rateController.newMessage();
+                }
+                break;
+            }
+            MetricsService.getInstance().publish(new MiddlewareTimeoutMetric());
+            System.out.println(this.clientId + " - Middleware took so much time to answer");
+        }
+
+        if (i == Config.WEBSOCKET_RECEIVE_MESSAGE_RETRY) {
+            MetricsService.getInstance().publish(new DisconnectionMetric());
+            System.out.println(this.clientId + " - Middleware didn't answer after " + Config.WEBSOCKET_RECEIVE_MESSAGE_RETRY + " retries");
+            this.executor.submit(Simulator.this::stop);
+        }
+    }
+
+    private void receive(byte[] bytes) {
+        try {
+            MessageDTO dto = new ObjectMapper().readValue(bytes, MessageDTO.class);
+
+            String answerId = dto.getAnswerId();
+            if (answerId != null) {
+                Object status = dto.getData().get("status");
+                boolean ok = Objects.equals("OK", status);
+                if (ok) {
+                    logDebug(this.clientId + " - Received OK for message " + answerId);
+                } else {
+                    System.out.println(this.clientId + " - Received " + status + " for message " + answerId + ": " + dto.getData().get("message"));
+                }
+
+                SentMessage sentMessage = this.semaphoreByIds.remove(answerId);
+                if (sentMessage == null) {
+                    System.out.println(this.clientId + " - Semaphore not found for " + answerId);
+                    return;
+                }
+
+                sentMessage.getSemaphore().release();
+                long ellapsed = System.nanoTime() - sentMessage.getTime();
+                MetricsService.getInstance().publish(new MessageReceivedMetric(ok, ellapsed));
+
+            } else {
+                String id = dto.getId();
+                Object from = dto.getData().get("from");
+
+                MessageDTO answer = MessageDTO.ok(id).build();
+                logDebug(this.clientId + " - Confirming message " + id + " from " + from + " with " + answer.getId());
+                publishToSend(answer);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     private void publishToSend(MessageDTO messageDTO) {
         this.toSend.add(messageDTO);
+    }
+
+    private void publishToReceive(byte[] bytes) {
+        this.executor.submit(() -> receive(bytes));
     }
 
     private String generateText() {
@@ -174,6 +222,12 @@ class Simulator {
             sb.append(value);
         }
         return sb.toString();
+    }
+
+    private void logDebug(String msg) {
+        if (Config.DEBUG) {
+            System.out.println(msg);
+        }
     }
 
     private class Listener implements WebSocket.Listener {
@@ -210,37 +264,7 @@ class Simulator {
             }
             this.data.clear();
 
-            try {
-                MessageDTO dto = new ObjectMapper().readValue(bytes, MessageDTO.class);
-
-                String answerId = dto.getAnswerId();
-                if (answerId != null) {
-                    Object status = dto.getData().get("status");
-                    boolean ok = Objects.equals("OK", status);
-                    if (ok) {
-                        if (Config.DEBUG) {
-                            System.out.println(Simulator.this.clientId + " - Received OK for message " + answerId);
-                        }
-                    } else {
-                        System.out.println(Simulator.this.clientId + " - Received " + status + " for message " + answerId + ": " + dto.getData().get("message"));
-                    }
-                    SentMessage sentMessage = Simulator.this.semaphoreByIds.remove(answerId);
-                    if (sentMessage != null) {
-                        sentMessage.getSemaphore().release();
-                        long ellapsed = System.nanoTime() - sentMessage.getTime();
-                        MetricsService.getInstance().publish(new MessageReceivedMetric(ok, ellapsed));
-                    }
-                } else {
-                    String id = dto.getId();
-                    MessageDTO answer = MessageDTO.ok(id).build();
-                    if (Config.DEBUG) {
-                        System.out.println(Simulator.this.clientId + " - Confirming message " + id + " from " + dto.getData().get("from") + " with " + answer.getId());
-                    }
-                    Simulator.this.publishToSend(answer);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            Simulator.this.publishToReceive(bytes);
         }
     }
 

@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ThreadFactory;
 
 @Singleton
 public class MessageService {
@@ -84,8 +85,16 @@ public class MessageService {
         return message;
     }
 
-    public void confirmMessage(String messageId) throws MiddlewareException {
-        long updated = this.repository.confirmMessageById(messageId);
+    public void confirmMessage(String messageId) throws MiddlewareException, InterruptedException {
+        long updated = 0;
+        long retry = 0;
+        while (retry < 3 && updated == 0) {
+            updated = this.repository.confirmMessageById(messageId);
+            if (updated == 0) {
+                Thread.sleep(50);
+                retry++;
+            }
+        }
         if (updated == 0) {
             throw new MiddlewareException("Message " + messageId + " not found");
         }

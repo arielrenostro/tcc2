@@ -60,7 +60,9 @@ public class Main {
             this.lastMessageTime = System.currentTimeMillis();
 
             MessageDTO messageDTO = this.mapper.readValue(message.getBody(), MessageDTO.class);
-            System.out.println("Received a message from " + messageDTO.getFrom());
+            if (Config.DEBUG) {
+                System.out.println("Received a message from " + messageDTO.getFrom());
+            }
 
             answerOk(messageDTO);
 

@@ -18,6 +18,7 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 
@@ -59,14 +60,14 @@ public class Broker {
         channel.queueDeclare(queueName, false, true, true, null);
         channel.queueBind(queueName, exchangeName, routingKey);
 
-        channel.basicQos(1);
+        channel.basicQos(4);
         channel.basicConsume(queueName, false, new Consumer(handler, channel), (consumerTag) -> {});
     }
 
     public void consumeQueue(String queueName, Consumer.Handler handler) throws IOException, TimeoutException {
         Channel channel = getConnection().createChannel();
 
-        channel.basicQos(1);
+        channel.basicQos(4);
         channel.basicConsume(queueName, false, new Consumer(handler, channel), (consumerTag) -> {});
     }
 
