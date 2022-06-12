@@ -34,7 +34,7 @@ public class ClientSimulatorService {
         for (int i = 0; i < clients; i++) {
             String uuid = null;
             while (uuid == null || this.clientIds.contains(uuid)) {
-                uuid = UUID.randomUUID().toString();
+                uuid = UUID.randomUUID().toString() + System.currentTimeMillis();
             }
             this.clientIds.add(uuid);
 

@@ -22,7 +22,7 @@ public class Config {
 
     public static final int WEBSOCKET_RECEIVE_MESSAGE_TIMEOUT = 5;
     public static final int WEBSOCKET_RECEIVE_MESSAGE_RETRY = 10;
-    public static final int WEBSOCKET_AFTER_CONNECTION_DELAY = 250;
+    public static final int WEBSOCKET_AFTER_CONNECTION_DELAY = 300;
 
     private static boolean getBoolean(String env, boolean def) {
         String value = System.getenv(env);

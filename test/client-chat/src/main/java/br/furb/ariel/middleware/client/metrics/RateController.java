@@ -1,22 +1,22 @@
 package br.furb.ariel.middleware.client.metrics;
 
+import br.furb.ariel.middleware.client.list.LinkedLimitedList;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
-import java.util.LinkedList;
 
 public class RateController {
 
-    private final LinkedList<Long> items = new LinkedList<>();
+    private final LinkedLimitedList<Long> items = new LinkedLimitedList<>(100);
+    private final String tag;
 
-    public RateController() {
+    public RateController(String tag) {
+        this.tag = tag;
     }
 
     public void newMessage() {
         this.items.add(System.currentTimeMillis());
-        if (this.items.size() > 100) {
-            this.items.removeFirst();
-        }
     }
 
     public void generateRate() {
@@ -50,6 +50,6 @@ public class RateController {
             rate = BigDecimal.ZERO;
         }
 
-        MetricsService.getInstance().publish(new RateMetric(rate));
+        MetricsService.getInstance().publish(new RateMetric(rate, this.tag));
     }
 }

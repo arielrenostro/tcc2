@@ -8,7 +8,6 @@ import br.furb.ariel.middleware.client.metrics.MessageReceivedMetric;
 import br.furb.ariel.middleware.client.metrics.MetricsService;
 import br.furb.ariel.middleware.client.metrics.MiddlewareTimeoutMetric;
 import br.furb.ariel.middleware.client.metrics.RateController;
-import br.furb.ariel.middleware.client.metrics.RateMetric;
 import br.furb.ariel.middleware.client.utils.NamedThreadFactory;
 import br.furb.ariel.middleware.client.utils.RandomUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -45,7 +44,8 @@ class Simulator {
     private final Map<String, SentMessage> semaphoreByIds = new ConcurrentHashMap<>();
     private final Random random = new Random();
     private final BlockingQueue<MessageDTO> toSend = new ArrayBlockingQueue<>(1000);
-    private final RateController rateController = new RateController();
+    private final RateController sendMessageRateController = new RateController("send");
+    private final RateController receiveMessageRateController = new RateController("receive");
 
     private WebSocket ws;
     private boolean stoped;
@@ -75,7 +75,8 @@ class Simulator {
     }
 
     private void startRate() {
-        this.executor.scheduleWithFixedDelay(this.rateController::generateRate, 0, 10, TimeUnit.SECONDS);
+        this.executor.scheduleWithFixedDelay(this.sendMessageRateController::generateRate, 0, 10, TimeUnit.SECONDS);
+        this.executor.scheduleWithFixedDelay(this.receiveMessageRateController::generateRate, 0, 10, TimeUnit.SECONDS);
     }
 
     private void startScheduler() {
@@ -154,7 +155,9 @@ class Simulator {
             sentMessage.getSemaphore().tryAcquire(Config.WEBSOCKET_RECEIVE_MESSAGE_TIMEOUT, TimeUnit.SECONDS);
             if (!this.semaphoreByIds.containsKey(message.getId())) {
                 if (message.getAnswerId() == null) {
-                    this.rateController.newMessage();
+                    this.sendMessageRateController.newMessage();
+                } else {
+                    this.receiveMessageRateController.newMessage();
                 }
                 break;
             }

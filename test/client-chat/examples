@@ -31,6 +31,14 @@
 }
 
 {
+    "clients": 40,
+    "rate": {
+        "unit": "MINUTES",
+        "value": 60
+    }
+}
+
+{
     "clients": 20,
     "rate": {
         "unit": "MINUTES",

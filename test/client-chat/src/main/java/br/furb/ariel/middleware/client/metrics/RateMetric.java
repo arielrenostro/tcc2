@@ -5,10 +5,10 @@ import java.util.Map;
 
 public class RateMetric extends Metric {
 
-    public RateMetric(BigDecimal rate) {
+    public RateMetric(BigDecimal rate, String tag) {
         super( //
                 "rate", //
-                Map.of(), //
+                Map.of("type", tag), //
                 Map.of("value", rate)//
         );
     }
