@@ -39,10 +39,10 @@
 }
 
 {
-    "clients": 20,
+    "clients": 100,
     "rate": {
         "unit": "MINUTES",
-        "value": 70
+        "value": 60
     }
 }
 

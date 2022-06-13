@@ -156,8 +156,6 @@ class Simulator {
             if (!this.semaphoreByIds.containsKey(message.getId())) {
                 if (message.getAnswerId() == null) {
                     this.sendMessageRateController.newMessage();
-                } else {
-                    this.receiveMessageRateController.newMessage();
                 }
                 break;
             }
@@ -203,6 +201,7 @@ class Simulator {
                 MessageDTO answer = MessageDTO.ok(id).build();
                 logDebug(this.clientId + " - Confirming message " + id + " from " + from + " with " + answer.getId());
                 publishToSend(answer);
+                this.receiveMessageRateController.newMessage();
             }
         } catch (Exception e) {
             e.printStackTrace();

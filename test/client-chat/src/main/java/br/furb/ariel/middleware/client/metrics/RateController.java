@@ -8,7 +8,7 @@ import java.time.Duration;
 
 public class RateController {
 
-    private final LinkedLimitedList<Long> items = new LinkedLimitedList<>(100);
+    private final LinkedLimitedList<Long> items = new LinkedLimitedList<>(20);
     private final String tag;
 
     public RateController(String tag) {
