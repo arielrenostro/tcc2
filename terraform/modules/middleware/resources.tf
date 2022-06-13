@@ -66,6 +66,14 @@ resource "aws_ecs_task_definition" "middleware" {
           value = "24"
         },
         {
+          name = "QUARKUS_MONGODB_MIN_POOL_SIZE",
+          value = "60"
+        },
+        {
+          name = "QUARKUS_MONGODB_MAX_POOL_SIZE",
+          value = "60"
+        },
+        {
           name  = "CACHE_CLIENT_REGISTER_TIMEOUT"
           value = "30000"
         },

@@ -177,8 +177,7 @@ module "influxdb" {
   route53 = var.dns.route53
 
   instance_type   = "t4g.micro"
-  #  ami             = "ami-02cb75f995890cd96"
-  ami             = "ami-001857c2476ba6db2"
+  ami             = "ami-02cb75f995890cd96"
   subnet          = module.vpc.subnet_a_private
   security_groups = [module.sg.influxdb]
 
