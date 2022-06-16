@@ -170,6 +170,7 @@ public class Broker {
             this.connectionFactory.setVirtualHost(this.config.getRabbitmqVhost());
             this.connectionFactory.setCredentialsProvider(new DefaultCredentialsProvider(this.config.getRabbitmqUsername(), this.config.getRabbitmqPassword()));
             this.connectionFactory.setCredentialsRefreshService(new DefaultCredentialsRefreshServiceBuilder().build());
+            this.connectionFactory.setSharedExecutor(Executors.newFixedThreadPool(this.config.getConsumersNotification()));
         }
         return this.connectionFactory;
     }

@@ -9,7 +9,6 @@ import org.influxdb.dto.Point;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.sql.Time;
 import java.util.concurrent.TimeUnit;
 
 @Singleton
@@ -27,7 +26,7 @@ public class MetricsRepository {
         InfluxDB client = getClient();
 
         Point point = Point.measurement(metric.getName()) //
-                .time(metric.getDate().getTime(), TimeUnit.MILLISECONDS)
+                .time(metric.getDate().getTime(), TimeUnit.MILLISECONDS) //
                 .tag(metric.getTags()) //
                 .tag("instanceId", containerService.getId()) //
                 .fields(metric.getFields()) //
@@ -42,7 +41,7 @@ public class MetricsRepository {
             influxDB = InfluxDBFactory.connect(config.getInfluxDBConnectionString());
             influxDB.createDatabase(config.getInfluxDBDatabase());
             influxDB.setDatabase(config.getInfluxDBDatabase());
-            influxDB.enableBatch(20, 5, TimeUnit.SECONDS);
+            influxDB.enableBatch(50, 5, TimeUnit.SECONDS);
             this.clientRef.set(influxDB);
         }
         return influxDB;
