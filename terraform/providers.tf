@@ -1,9 +1,9 @@
 provider "aws" {
   # se existe perfil aws, pode ser utilizado aqui:
-  profile             = "ariel"
+  # profile             = "ariel"
 
   # ID da conta AWS
-  allowed_account_ids = [806721437369]
+  allowed_account_ids = [123456789123]
 
   # região da AWS
   region              = "us-east-2"
