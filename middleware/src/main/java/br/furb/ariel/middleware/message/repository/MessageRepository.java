@@ -20,21 +20,23 @@ public class MessageRepository extends BaseRepository<Message> {
 
     public List<Message> findPendingMessagesByClient(String clientId) {
         return this.list( //
-                "{'destination.type': :type, 'destination._id': :id, 'expiresIn': {$gt: :ttl}}", //
+                "{'destination.type': :type, 'destination._id': :id, 'expiresIn': {$gt: :ttl}, 'status': :status}", //
                 Parameters //
                         .with("type", DestinationType.CLIENT) //
                         .and("id", clientId) //
                         .and("ttl", new Date()) //
+                        .and("status", MessageStatus.PENDING) //
         );
     }
 
     public List<Message> findPendingMessagesByService(String serviceId) {
         return this.list( //
-                "{'destination.type': :type, 'destination._id': :id, 'expiresIn': {$gt: :ttl}}", //
+                "{'destination.type': :type, 'destination._id': :id, 'expiresIn': {$gt: :ttl}, 'status': :status}", //
                 Parameters //
                         .with("type", DestinationType.SERVICE) //
                         .and("id", serviceId) //
                         .and("ttl", new Date()) //
+                        .and("status", MessageStatus.PENDING) //
         );
     }
 
